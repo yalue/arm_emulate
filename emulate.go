@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (n *dataProcessingInstruction) evaluateSecondOperand(
+func (n *DataProcessingInstruction) evaluateSecondOperand(
 	p ARMProcessor) (uint32, error) {
 	if n.isImmediate {
 		r := n.rotate << 1
@@ -21,7 +21,7 @@ func (n *dataProcessingInstruction) evaluateSecondOperand(
 	return n.shift.Apply(value, p)
 }
 
-func (n *dataProcessingInstruction) Emulate(p ARMProcessor) error {
+func (n *DataProcessingInstruction) Emulate(p ARMProcessor) error {
 	if !n.Condition().IsMet(p) {
 		return nil
 	}
@@ -71,7 +71,7 @@ func (n *dataProcessingInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *psrTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *PSRTransferInstruction) Emulate(p ARMProcessor) error {
 	var value uint32
 	var e error
 	if !n.Condition().IsMet(p) {
@@ -122,7 +122,7 @@ func (n *psrTransferInstruction) Emulate(p ARMProcessor) error {
 	return e
 }
 
-func (n *multiplyInstruction) Emulate(p ARMProcessor) error {
+func (n *MultiplyInstruction) Emulate(p ARMProcessor) error {
 	if !n.Condition().IsMet(p) {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (n *multiplyInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *singleDataSwapInstruction) Emulate(p ARMProcessor) error {
+func (n *SingleDataSwapInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -193,7 +193,7 @@ func (n *singleDataSwapInstruction) Emulate(p ARMProcessor) error {
 	return e
 }
 
-func (n *branchExchangeInstruction) Emulate(p ARMProcessor) error {
+func (n *BranchExchangeInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -209,7 +209,7 @@ func (n *branchExchangeInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *halfwordDataTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *HalfwordDataTransferInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -278,7 +278,7 @@ func (n *halfwordDataTransferInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *singleDataTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.Condition().IsMet(p) {
 		return nil
@@ -358,7 +358,7 @@ func (n *singleDataTransferInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *blockDataTransferInstruction) blockDataStore(p ARMProcessor) error {
+func (n *BlockDataTransferInstruction) blockDataStore(p ARMProcessor) error {
 	var e error
 	bits := n.registerList
 	toStore := make([]uint32, 0, 16)
@@ -411,7 +411,7 @@ func (n *blockDataTransferInstruction) blockDataStore(p ARMProcessor) error {
 	return nil
 }
 
-func (n *blockDataTransferInstruction) blockDataLoad(p ARMProcessor) error {
+func (n *BlockDataTransferInstruction) blockDataLoad(p ARMProcessor) error {
 	loadedBase := false
 	useUserBank := n.forceUser && ((n.registerList & 0x8000) == 0)
 	bits := n.registerList
@@ -466,7 +466,7 @@ func (n *blockDataTransferInstruction) blockDataLoad(p ARMProcessor) error {
 	return nil
 }
 
-func (n *blockDataTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *BlockDataTransferInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -492,7 +492,7 @@ func (n *blockDataTransferInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *branchInstruction) Emulate(p ARMProcessor) error {
+func (n *BranchInstruction) Emulate(p ARMProcessor) error {
 	if !n.condition.IsMet(p) {
 		return nil
 	}
@@ -509,7 +509,7 @@ func (n *branchInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *coprocDataTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *CoprocDataTransferInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -546,7 +546,7 @@ func (n *coprocDataTransferInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *coprocDataOperationInstruction) Emulate(p ARMProcessor) error {
+func (n *CoprocDataOperationInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -564,7 +564,7 @@ func (n *coprocDataOperationInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *coprocRegisterTransferInstruction) Emulate(p ARMProcessor) error {
+func (n *CoprocRegisterTransferInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil
@@ -582,7 +582,7 @@ func (n *coprocRegisterTransferInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *softwareInterruptInstruction) Emulate(p ARMProcessor) error {
+func (n *SoftwareInterruptInstruction) Emulate(p ARMProcessor) error {
 	var e error
 	if !n.condition.IsMet(p) {
 		return nil

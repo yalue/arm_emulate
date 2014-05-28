@@ -50,7 +50,7 @@ func (n *basicARMInstruction) String() string {
 	return fmt.Sprintf("data: 0x%08x", n.raw)
 }
 
-type dataProcessingInstruction struct {
+type DataProcessingInstruction struct {
 	basicARMInstruction
 	opcode        ARMDataProcessingOpcode
 	rm            ARMRegister
@@ -63,7 +63,7 @@ type dataProcessingInstruction struct {
 	isImmediate   bool
 }
 
-func (n *dataProcessingInstruction) secondOperand() string {
+func (n *DataProcessingInstruction) secondOperand() string {
 	if n.isImmediate {
 		r := n.rotate << 1
 		value := uint32(n.immediate)
@@ -77,7 +77,7 @@ func (n *dataProcessingInstruction) secondOperand() string {
 	return fmt.Sprintf("%s%s", toReturn, n.shift)
 }
 
-func (n *dataProcessingInstruction) String() string {
+func (n *DataProcessingInstruction) String() string {
 	prefix := n.opcode.String()
 	prefix += n.condition.String()
 	opcodeValue := n.opcode.Value()
@@ -96,7 +96,7 @@ func (n *dataProcessingInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s, %s", prefix, n.rd, n.rn, n.secondOperand())
 }
 
-type psrTransferInstruction struct {
+type PSRTransferInstruction struct {
 	basicARMInstruction
 	rm          ARMRegister
 	rd          ARMRegister
@@ -108,7 +108,7 @@ type psrTransferInstruction struct {
 	rotate      uint8
 }
 
-func (n *psrTransferInstruction) String() string {
+func (n *PSRTransferInstruction) String() string {
 	var usedPSR string
 	if n.useCPSR {
 		usedPSR = "cpsr"
@@ -131,7 +131,7 @@ func (n *psrTransferInstruction) String() string {
 	return fmt.Sprintf("msr%s %s, %s", n.condition, usedPSR, n.rm)
 }
 
-type multiplyInstruction struct {
+type MultiplyInstruction struct {
 	basicARMInstruction
 	isLongMultiply bool
 	rm             ARMRegister
@@ -145,7 +145,7 @@ type multiplyInstruction struct {
 	signed         bool
 }
 
-func (n *multiplyInstruction) String() string {
+func (n *MultiplyInstruction) String() string {
 	var start string
 	if n.accumulate {
 		start = "mla"
@@ -173,7 +173,7 @@ func (n *multiplyInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s, %s, %s", start, n.rd, n.rm, n.rs, n.rn)
 }
 
-type singleDataSwapInstruction struct {
+type SingleDataSwapInstruction struct {
 	basicARMInstruction
 	rm           ARMRegister
 	rn           ARMRegister
@@ -181,7 +181,7 @@ type singleDataSwapInstruction struct {
 	byteQuantity bool
 }
 
-func (n *singleDataSwapInstruction) String() string {
+func (n *SingleDataSwapInstruction) String() string {
 	start := "swp"
 	start += n.condition.String()
 	if n.byteQuantity {
@@ -190,16 +190,16 @@ func (n *singleDataSwapInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s, [%s]", start, n.rd, n.rm, n.rn)
 }
 
-type branchExchangeInstruction struct {
+type BranchExchangeInstruction struct {
 	basicARMInstruction
 	rn ARMRegister
 }
 
-func (n *branchExchangeInstruction) String() string {
+func (n *BranchExchangeInstruction) String() string {
 	return fmt.Sprintf("bx%s %s", n.condition, n.rn)
 }
 
-type halfwordDataTransferInstruction struct {
+type HalfwordDataTransferInstruction struct {
 	basicARMInstruction
 	isImmediate bool
 	halfword    bool
@@ -214,7 +214,7 @@ type halfwordDataTransferInstruction struct {
 	preindex    bool
 }
 
-func (n *halfwordDataTransferInstruction) String() string {
+func (n *HalfwordDataTransferInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldr"
@@ -262,7 +262,7 @@ func (n *halfwordDataTransferInstruction) String() string {
 	return fmt.Sprintf("%s [%s], %s", start, n.rn, offsetReg)
 }
 
-type singleDataTransferInstruction struct {
+type SingleDataTransferInstruction struct {
 	basicARMInstruction
 	rn              ARMRegister
 	rd              ARMRegister
@@ -277,7 +277,7 @@ type singleDataTransferInstruction struct {
 	immediateOffset bool
 }
 
-func (n *singleDataTransferInstruction) String() string {
+func (n *SingleDataTransferInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldr"
@@ -329,11 +329,11 @@ func (n *singleDataTransferInstruction) String() string {
 		shiftString)
 }
 
-type undefinedInstruction struct {
+type UndefinedInstruction struct {
 	basicARMInstruction
 }
 
-type blockDataTransferInstruction struct {
+type BlockDataTransferInstruction struct {
 	basicARMInstruction
 	registerList uint16
 	rn           ARMRegister
@@ -344,7 +344,7 @@ type blockDataTransferInstruction struct {
 	preindex     bool
 }
 
-func (n *blockDataTransferInstruction) listString() string {
+func (n *BlockDataTransferInstruction) listString() string {
 	var s string
 	consecutive := uint8(0)
 	s = "{"
@@ -375,7 +375,7 @@ func (n *blockDataTransferInstruction) listString() string {
 	return s
 }
 
-func (n *blockDataTransferInstruction) String() string {
+func (n *BlockDataTransferInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldm"
@@ -423,13 +423,13 @@ func (n *blockDataTransferInstruction) String() string {
 	return start
 }
 
-type branchInstruction struct {
+type BranchInstruction struct {
 	basicARMInstruction
 	offset int32
 	link   bool
 }
 
-func (n *branchInstruction) String() string {
+func (n *BranchInstruction) String() string {
 	start := "b"
 	if n.link {
 		start += "l"
@@ -441,7 +441,7 @@ func (n *branchInstruction) String() string {
 	return fmt.Sprintf("%s %d", start, offset)
 }
 
-type coprocDataTransferInstruction struct {
+type CoprocDataTransferInstruction struct {
 	basicARMInstruction
 	rn           ARMRegister
 	coprocNumber uint8
@@ -454,7 +454,7 @@ type coprocDataTransferInstruction struct {
 	preindex     bool
 }
 
-func (n *coprocDataTransferInstruction) String() string {
+func (n *CoprocDataTransferInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldc"
@@ -492,7 +492,7 @@ func (n *coprocDataTransferInstruction) String() string {
 	return fmt.Sprintf("%s [%s], %d", start, n.rn, offset)
 }
 
-type coprocDataOperationInstruction struct {
+type CoprocDataOperationInstruction struct {
 	basicARMInstruction
 	coprocNumber uint8
 	coprocOpcode uint8
@@ -502,13 +502,13 @@ type coprocDataOperationInstruction struct {
 	coprocRm     uint8
 }
 
-func (n *coprocDataOperationInstruction) String() string {
+func (n *CoprocDataOperationInstruction) String() string {
 	return fmt.Sprintf("cdp%s p%d, %d, c%d, c%d, c%d, %d", n.condition,
 		n.coprocNumber, n.coprocOpcode, n.coprocRd, n.coprocRn, n.coprocRm,
 		n.coprocInfo)
 }
 
-type coprocRegisterTransferInstruction struct {
+type CoprocRegisterTransferInstruction struct {
 	basicARMInstruction
 	rd            ARMRegister
 	load          bool
@@ -519,7 +519,7 @@ type coprocRegisterTransferInstruction struct {
 	coprocRm      uint8
 }
 
-func (n *coprocRegisterTransferInstruction) String() string {
+func (n *CoprocRegisterTransferInstruction) String() string {
 	var start string
 	if n.load {
 		start = "mrc"
@@ -531,12 +531,12 @@ func (n *coprocRegisterTransferInstruction) String() string {
 		n.coprocOpcode, n.rd, n.coprocRn, n.coprocRm, n.coprocOperand)
 }
 
-type softwareInterruptInstruction struct {
+type SoftwareInterruptInstruction struct {
 	basicARMInstruction
 	comment uint32
 }
 
-func (n *softwareInterruptInstruction) String() string {
+func (n *SoftwareInterruptInstruction) String() string {
 	return fmt.Sprintf("swi%s %08x", n.condition, n.comment)
 }
 
@@ -545,7 +545,7 @@ func getCondition(raw uint32) ARMCondition {
 }
 
 func parseSoftwareInterruptInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn softwareInterruptInstruction
+	var toReturn SoftwareInterruptInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.comment = raw & 0x00ffffff
@@ -554,7 +554,7 @@ func parseSoftwareInterruptInstruction(raw uint32) (ARMInstruction, error) {
 
 func parseCoprocRegisterTransferInstruction(raw uint32) (ARMInstruction,
 	error) {
-	var toReturn coprocRegisterTransferInstruction
+	var toReturn CoprocRegisterTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
@@ -568,7 +568,7 @@ func parseCoprocRegisterTransferInstruction(raw uint32) (ARMInstruction,
 }
 
 func parseCoprocDataOperationInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn coprocDataOperationInstruction
+	var toReturn CoprocDataOperationInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.coprocNumber = uint8((raw >> 8) & 0xf)
@@ -581,7 +581,7 @@ func parseCoprocDataOperationInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseCoprocDataTransferInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn coprocDataTransferInstruction
+	var toReturn CoprocDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
@@ -597,7 +597,7 @@ func parseCoprocDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseBranchInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn branchInstruction
+	var toReturn BranchInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.offset = int32(raw) & int32(0x00ffffff)
@@ -606,7 +606,7 @@ func parseBranchInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseBlockDataTransferInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn blockDataTransferInstruction
+	var toReturn BlockDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.registerList = uint16(raw & 0xffff)
@@ -620,14 +620,14 @@ func parseBlockDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseUndefinedInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn undefinedInstruction
+	var toReturn UndefinedInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	return &toReturn, fmt.Errorf("Undefined instruction")
 }
 
 func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn singleDataTransferInstruction
+	var toReturn SingleDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.immediateOffset = (raw & 0x2000000) == 0
@@ -636,7 +636,7 @@ func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 		// This shouldn't happen as along as the undefined instruction mask is
 		// checked before the single data transfer instruction mask
 		if toReturn.shift.UseRegister() {
-			var errorInstruction undefinedInstruction
+			var errorInstruction UndefinedInstruction
 			errorInstruction.raw = raw
 			errorInstruction.condition = toReturn.condition
 			return &errorInstruction, fmt.Errorf("Illegal shift")
@@ -656,7 +656,7 @@ func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseHalfwordDataTransferInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn halfwordDataTransferInstruction
+	var toReturn HalfwordDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.isImmediate = (raw & 0x400000) != 0
@@ -677,7 +677,7 @@ func parseHalfwordDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseBranchExchangeInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn branchExchangeInstruction
+	var toReturn BranchExchangeInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.rn = NewARMRegister(uint8(raw & 0xf))
@@ -685,7 +685,7 @@ func parseBranchExchangeInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseSingleDataSwapInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn singleDataSwapInstruction
+	var toReturn SingleDataSwapInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.rm = NewARMRegister(uint8(raw & 0xf))
@@ -696,7 +696,7 @@ func parseSingleDataSwapInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseMultiplyInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn multiplyInstruction
+	var toReturn MultiplyInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.isLongMultiply = (raw & 0x800000) != 0
@@ -736,7 +736,7 @@ func parseMultiplyInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parsePSRTransferInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn psrTransferInstruction
+	var toReturn PSRTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.useCPSR = (raw & 0x400000) == 0
@@ -758,7 +758,7 @@ func parsePSRTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseDataProcessingInstruction(raw uint32) (ARMInstruction, error) {
-	var toReturn dataProcessingInstruction
+	var toReturn DataProcessingInstruction
 	toReturn.raw = raw
 	toReturn.setConditions = (raw & 0x100000) != 0
 	if !toReturn.setConditions {

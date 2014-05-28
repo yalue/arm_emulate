@@ -26,7 +26,7 @@ func (n *basicTHUMBInstruction) Emulate(p ARMProcessor) error {
 	return fmt.Errorf("Emulation not implemented for 0x%02x", n.raw)
 }
 
-type moveShiftedRegisterInstruction struct {
+type MoveShiftedRegisterInstruction struct {
 	basicTHUMBInstruction
 	rd        ARMRegister
 	rs        ARMRegister
@@ -34,7 +34,7 @@ type moveShiftedRegisterInstruction struct {
 	operation uint8
 }
 
-func (n *moveShiftedRegisterInstruction) String() string {
+func (n *MoveShiftedRegisterInstruction) String() string {
 	var start string
 	if n.operation == 0 {
 		start = "lsl"
@@ -46,7 +46,7 @@ func (n *moveShiftedRegisterInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s, %d", start, n.rd, n.rs, n.offset)
 }
 
-type addSubtractInstruction struct {
+type AddSubtractInstruction struct {
 	basicTHUMBInstruction
 	isImmediate bool
 	subtract    bool
@@ -56,7 +56,7 @@ type addSubtractInstruction struct {
 	rd          ARMRegister
 }
 
-func (n *addSubtractInstruction) String() string {
+func (n *AddSubtractInstruction) String() string {
 	var start string
 	if n.subtract {
 		start = "sub"
@@ -72,14 +72,14 @@ func (n *addSubtractInstruction) String() string {
 	return start
 }
 
-type moveCompareAddSubtractImmediateInstruction struct {
+type MoveCompareAddSubtractImmediateInstruction struct {
 	basicTHUMBInstruction
 	rd        ARMRegister
 	operation uint8
 	immediate uint8
 }
 
-func (n *moveCompareAddSubtractImmediateInstruction) String() string {
+func (n *MoveCompareAddSubtractImmediateInstruction) String() string {
 	var start string
 	if n.operation == 0 {
 		start = "mov"
@@ -93,18 +93,18 @@ func (n *moveCompareAddSubtractImmediateInstruction) String() string {
 	return fmt.Sprintf("%s %s, %d", start, n.rd, n.immediate)
 }
 
-type aluOperationInstruction struct {
+type ALUOperationInstruction struct {
 	basicTHUMBInstruction
 	opcode ALUOpcodeTHUMB
 	rd     ARMRegister
 	rs     ARMRegister
 }
 
-func (n *aluOperationInstruction) String() string {
+func (n *ALUOperationInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s", n.opcode, n.rd, n.rs)
 }
 
-type highRegisterOperationInstruction struct {
+type HighRegisterOperationInstruction struct {
 	basicTHUMBInstruction
 	rd        ARMRegister
 	rs        ARMRegister
@@ -113,7 +113,7 @@ type highRegisterOperationInstruction struct {
 	operation uint8
 }
 
-func (n *highRegisterOperationInstruction) String() string {
+func (n *HighRegisterOperationInstruction) String() string {
 	var start string
 	if n.operation == 0 {
 		start = "add"
@@ -127,17 +127,17 @@ func (n *highRegisterOperationInstruction) String() string {
 	return fmt.Sprintf("%s %s, %s", start, n.rd, n.rs)
 }
 
-type pcRelativeLoadInstruction struct {
+type PcRelativeLoadInstruction struct {
 	basicTHUMBInstruction
 	offset uint8
 	rd     ARMRegister
 }
 
-func (n *pcRelativeLoadInstruction) String() string {
+func (n *PcRelativeLoadInstruction) String() string {
 	return fmt.Sprintf("ldr %s, [pc, %d]", n.rd, uint16(n.offset)<<2)
 }
 
-type loadStoreRegisterOffsetInstruction struct {
+type LoadStoreRegisterOffsetInstruction struct {
 	basicTHUMBInstruction
 	rd           ARMRegister
 	rb           ARMRegister
@@ -146,7 +146,7 @@ type loadStoreRegisterOffsetInstruction struct {
 	load         bool
 }
 
-func (n *loadStoreRegisterOffsetInstruction) String() string {
+func (n *LoadStoreRegisterOffsetInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldr"
@@ -159,7 +159,7 @@ func (n *loadStoreRegisterOffsetInstruction) String() string {
 	return fmt.Sprintf("%s %s, [%s, %s]", start, n.rd, n.rb, n.ro)
 }
 
-type loadStoreSignExtendedHalfwordInstruction struct {
+type LoadStoreSignExtendedHalfwordInstruction struct {
 	basicTHUMBInstruction
 	rd         ARMRegister
 	rb         ARMRegister
@@ -168,7 +168,7 @@ type loadStoreSignExtendedHalfwordInstruction struct {
 	hBit       bool
 }
 
-func (n *loadStoreSignExtendedHalfwordInstruction) String() string {
+func (n *LoadStoreSignExtendedHalfwordInstruction) String() string {
 	var start string
 	if n.signExtend {
 		if n.hBit {
@@ -186,7 +186,7 @@ func (n *loadStoreSignExtendedHalfwordInstruction) String() string {
 	return fmt.Sprintf("%s %s, [%s, %s]", start, n.rd, n.rb, n.ro)
 }
 
-type loadStoreImmediateOffsetInstruction struct {
+type LoadStoreImmediateOffsetInstruction struct {
 	basicTHUMBInstruction
 	rd           ARMRegister
 	rb           ARMRegister
@@ -195,7 +195,7 @@ type loadStoreImmediateOffsetInstruction struct {
 	byteQuantity bool
 }
 
-func (n *loadStoreImmediateOffsetInstruction) String() string {
+func (n *LoadStoreImmediateOffsetInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldr"
@@ -211,7 +211,7 @@ func (n *loadStoreImmediateOffsetInstruction) String() string {
 	return fmt.Sprintf("%s %s, [%s, %d]", start, n.rd, n.rb, offset)
 }
 
-type loadStoreHalfwordInstruction struct {
+type LoadStoreHalfwordInstruction struct {
 	basicTHUMBInstruction
 	rd     ARMRegister
 	rb     ARMRegister
@@ -219,7 +219,7 @@ type loadStoreHalfwordInstruction struct {
 	load   bool
 }
 
-func (n *loadStoreHalfwordInstruction) String() string {
+func (n *LoadStoreHalfwordInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldrh"
@@ -229,14 +229,14 @@ func (n *loadStoreHalfwordInstruction) String() string {
 	return fmt.Sprintf("%s %s, [%s, %d]", start, n.rd, n.rb, n.offset<<1)
 }
 
-type spRelativeLoadStoreInstruction struct {
+type SPRelativeLoadStoreInstruction struct {
 	basicTHUMBInstruction
 	offset uint8
 	rd     ARMRegister
 	load   bool
 }
 
-func (n *spRelativeLoadStoreInstruction) String() string {
+func (n *SPRelativeLoadStoreInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldr"
@@ -246,14 +246,14 @@ func (n *spRelativeLoadStoreInstruction) String() string {
 	return fmt.Sprintf("%s %s, [sp, %d]", start, n.rd, uint16(n.offset)<<1)
 }
 
-type loadAddressInstruction struct {
+type LoadAddressInstruction struct {
 	basicTHUMBInstruction
 	offset uint8
 	rd     ARMRegister
 	loadSP bool
 }
 
-func (n *loadAddressInstruction) String() string {
+func (n *LoadAddressInstruction) String() string {
 	var source string
 	if n.loadSP {
 		source = "sp"
@@ -263,13 +263,13 @@ func (n *loadAddressInstruction) String() string {
 	return fmt.Sprintf("add %s, %s, %d", n.rd, source, uint16(n.offset)<<2)
 }
 
-type addToStackPointerInstruction struct {
+type AddToStackPointerInstruction struct {
 	basicTHUMBInstruction
 	offset   uint8
 	negative bool
 }
 
-func (n *addToStackPointerInstruction) String() string {
+func (n *AddToStackPointerInstruction) String() string {
 	offset := int(n.offset) << 2
 	if n.negative {
 		offset = -offset
@@ -277,7 +277,7 @@ func (n *addToStackPointerInstruction) String() string {
 	return fmt.Sprintf("add sp, %d", offset)
 }
 
-type pushPopRegistersInstruction struct {
+type PushPopRegistersInstruction struct {
 	basicTHUMBInstruction
 	registerList  uint8
 	storeLRLoadPC bool
@@ -313,7 +313,7 @@ func registerListStringTHUMB(bits uint8) string {
 	return toReturn
 }
 
-func (n *pushPopRegistersInstruction) String() string {
+func (n *PushPopRegistersInstruction) String() string {
 	var start string
 	registerList := registerListStringTHUMB(n.registerList)
 	if n.load {
@@ -331,14 +331,14 @@ func (n *pushPopRegistersInstruction) String() string {
 
 }
 
-type multipleLoadStoreInstruction struct {
+type MultipleLoadStoreInstruction struct {
 	basicTHUMBInstruction
 	registerList uint8
 	rb           ARMRegister
 	load         bool
 }
 
-func (n *multipleLoadStoreInstruction) String() string {
+func (n *MultipleLoadStoreInstruction) String() string {
 	var start string
 	if n.load {
 		start = "ldmia"
@@ -349,45 +349,45 @@ func (n *multipleLoadStoreInstruction) String() string {
 	return fmt.Sprintf("%s %s!, {%s}", start, n.rb, registers)
 }
 
-type conditionalBranchInstruction struct {
+type ConditionalBranchInstruction struct {
 	basicTHUMBInstruction
 	offset    uint8
 	condition ARMCondition
 }
 
-func (n *conditionalBranchInstruction) String() string {
+func (n *ConditionalBranchInstruction) String() string {
 	// Offset must be a signed type before it is converted to 16-bits
 	offset := int16(int8(n.offset)) << 1
 	return fmt.Sprintf("b%s %d", n.condition, offset)
 }
 
-type softwareInterruptTHUMBInstruction struct {
+type SoftwareInterruptTHUMBInstruction struct {
 	basicTHUMBInstruction
 	comment uint8
 }
 
-func (n *softwareInterruptTHUMBInstruction) String() string {
+func (n *SoftwareInterruptTHUMBInstruction) String() string {
 	return fmt.Sprintf("swi %d", n.comment)
 }
 
-type unconditionalBranchInstruction struct {
+type unConditionalBranchInstruction struct {
 	basicTHUMBInstruction
 	offset uint16
 }
 
-func (n *unconditionalBranchInstruction) String() string {
+func (n *unConditionalBranchInstruction) String() string {
 	// Take care of sign extending and left-shifting by 1
 	offset := int16(n.offset<<5) >> 4
 	return fmt.Sprintf("b %d", offset)
 }
 
-type longBranchAndLinkInstruction struct {
+type LongBranchAndLinkInstruction struct {
 	basicTHUMBInstruction
 	offset    uint16
 	offsetLow bool
 }
 
-func (n *longBranchAndLinkInstruction) String() string {
+func (n *LongBranchAndLinkInstruction) String() string {
 	if n.offsetLow {
 		return fmt.Sprintf("bl lr + %d (long branch and link)", n.offset<<1)
 	}
@@ -396,7 +396,7 @@ func (n *longBranchAndLinkInstruction) String() string {
 }
 
 func parseMoveShiftedRegisterInstruction(r uint16) (THUMBInstruction, error) {
-	var toReturn moveShiftedRegisterInstruction
+	var toReturn MoveShiftedRegisterInstruction
 	toReturn.raw = r
 	toReturn.rd = NewARMRegister(uint8(r & 7))
 	toReturn.rs = NewARMRegister(uint8((r >> 3) & 7))
@@ -406,7 +406,7 @@ func parseMoveShiftedRegisterInstruction(r uint16) (THUMBInstruction, error) {
 }
 
 func parseAddSubtractInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn addSubtractInstruction
+	var toReturn AddSubtractInstruction
 	toReturn.raw = raw
 	toReturn.rd = NewARMRegister(uint8(raw & 7))
 	toReturn.rs = NewARMRegister(uint8((raw >> 3) & 7))
@@ -421,7 +421,7 @@ func parseAddSubtractInstruction(raw uint16) (THUMBInstruction, error) {
 
 func parseMoveCompareAddSubtractImmediateInstruction(raw uint16) (
 	THUMBInstruction, error) {
-	var toReturn moveCompareAddSubtractImmediateInstruction
+	var toReturn MoveCompareAddSubtractImmediateInstruction
 	toReturn.raw = raw
 	toReturn.immediate = uint8(raw & 0xff)
 	toReturn.operation = uint8((raw >> 11) & 3)
@@ -430,7 +430,7 @@ func parseMoveCompareAddSubtractImmediateInstruction(raw uint16) (
 }
 
 func parseALUOperationInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn aluOperationInstruction
+	var toReturn ALUOperationInstruction
 	toReturn.raw = raw
 	toReturn.opcode = NewALUOpcodeTHUMB(uint8((raw >> 6) & 0xf))
 	toReturn.rd = NewARMRegister(uint8(raw & 7))
@@ -440,7 +440,7 @@ func parseALUOperationInstruction(raw uint16) (THUMBInstruction, error) {
 
 func parseHighRegisterOperationInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn highRegisterOperationInstruction
+	var toReturn HighRegisterOperationInstruction
 	var h bool
 	var register uint8
 	toReturn.raw = raw
@@ -463,7 +463,7 @@ func parseHighRegisterOperationInstruction(raw uint16) (THUMBInstruction,
 }
 
 func parsePCRelativeLoadInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn pcRelativeLoadInstruction
+	var toReturn PcRelativeLoadInstruction
 	toReturn.raw = raw
 	toReturn.offset = uint8(raw & 0xff)
 	toReturn.rd = NewARMRegister(uint8((raw >> 8) & 7))
@@ -472,7 +472,7 @@ func parsePCRelativeLoadInstruction(raw uint16) (THUMBInstruction, error) {
 
 func parseLoadStoreRegisterOffsetInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn loadStoreRegisterOffsetInstruction
+	var toReturn LoadStoreRegisterOffsetInstruction
 	toReturn.raw = raw
 	toReturn.byteQuantity = (raw & 0x400) != 0
 	toReturn.load = (raw & 0x800) != 0
@@ -484,7 +484,7 @@ func parseLoadStoreRegisterOffsetInstruction(raw uint16) (THUMBInstruction,
 
 func parseLoadStoreSignExtendedHalfwordInstruction(raw uint16) (
 	THUMBInstruction, error) {
-	var toReturn loadStoreSignExtendedHalfwordInstruction
+	var toReturn LoadStoreSignExtendedHalfwordInstruction
 	toReturn.raw = raw
 	toReturn.rd = NewARMRegister(uint8(raw & 7))
 	toReturn.rb = NewARMRegister(uint8((raw >> 3) & 7))
@@ -496,7 +496,7 @@ func parseLoadStoreSignExtendedHalfwordInstruction(raw uint16) (
 
 func parseLoadStoreImmediateOffsetInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn loadStoreImmediateOffsetInstruction
+	var toReturn LoadStoreImmediateOffsetInstruction
 	toReturn.raw = raw
 	toReturn.rd = NewARMRegister(uint8(raw & 7))
 	toReturn.rb = NewARMRegister(uint8((raw >> 3) & 7))
@@ -507,7 +507,7 @@ func parseLoadStoreImmediateOffsetInstruction(raw uint16) (THUMBInstruction,
 }
 
 func parseLoadStoreHalfwordInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn loadStoreHalfwordInstruction
+	var toReturn LoadStoreHalfwordInstruction
 	toReturn.raw = raw
 	toReturn.rd = NewARMRegister(uint8(raw & 7))
 	toReturn.rb = NewARMRegister(uint8((raw >> 3) & 7))
@@ -518,7 +518,7 @@ func parseLoadStoreHalfwordInstruction(raw uint16) (THUMBInstruction, error) {
 
 func parseSPRelativeLoadStoreInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn spRelativeLoadStoreInstruction
+	var toReturn SPRelativeLoadStoreInstruction
 	toReturn.raw = raw
 	toReturn.offset = uint8(raw & 0xff)
 	toReturn.rd = NewARMRegister(uint8((raw >> 8) & 0x7))
@@ -527,7 +527,7 @@ func parseSPRelativeLoadStoreInstruction(raw uint16) (THUMBInstruction,
 }
 
 func parseLoadAddressInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn loadAddressInstruction
+	var toReturn LoadAddressInstruction
 	toReturn.raw = raw
 	toReturn.offset = uint8(raw & 0xff)
 	toReturn.rd = NewARMRegister(uint8((raw >> 8) & 0x7))
@@ -536,7 +536,7 @@ func parseLoadAddressInstruction(raw uint16) (THUMBInstruction, error) {
 }
 
 func parseAddToStackPointerInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn addToStackPointerInstruction
+	var toReturn AddToStackPointerInstruction
 	toReturn.raw = raw
 	toReturn.offset = uint8(raw & 0x7f)
 	toReturn.negative = (raw & 0x80) != 0
@@ -544,7 +544,7 @@ func parseAddToStackPointerInstruction(raw uint16) (THUMBInstruction, error) {
 }
 
 func parsePushPopRegistersInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn pushPopRegistersInstruction
+	var toReturn PushPopRegistersInstruction
 	toReturn.raw = raw
 	toReturn.registerList = uint8(raw & 0xff)
 	toReturn.storeLRLoadPC = (raw & 0x100) != 0
@@ -553,7 +553,7 @@ func parsePushPopRegistersInstruction(raw uint16) (THUMBInstruction, error) {
 }
 
 func parseMultipleLoadStoreInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn multipleLoadStoreInstruction
+	var toReturn MultipleLoadStoreInstruction
 	toReturn.raw = raw
 	toReturn.registerList = uint8(raw & 0xff)
 	toReturn.rb = NewARMRegister(uint8((raw >> 8) & 0x7))
@@ -562,7 +562,7 @@ func parseMultipleLoadStoreInstruction(raw uint16) (THUMBInstruction, error) {
 }
 
 func parseConditionalBranchInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn conditionalBranchInstruction
+	var toReturn ConditionalBranchInstruction
 	toReturn.raw = raw
 	toReturn.offset = uint8(raw & 0xff)
 	toReturn.condition = NewARMCondition(uint8((raw >> 8) & 0xf))
@@ -574,22 +574,22 @@ func parseConditionalBranchInstruction(raw uint16) (THUMBInstruction, error) {
 
 func parseSoftwareInterruptTHUMBInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn softwareInterruptTHUMBInstruction
+	var toReturn SoftwareInterruptTHUMBInstruction
 	toReturn.raw = raw
 	toReturn.comment = uint8(raw & 0xff)
 	return &toReturn, nil
 }
 
-func parseUnconditionalBranchInstruction(raw uint16) (THUMBInstruction,
+func parseUnConditionalBranchInstruction(raw uint16) (THUMBInstruction,
 	error) {
-	var toReturn unconditionalBranchInstruction
+	var toReturn unConditionalBranchInstruction
 	toReturn.raw = raw
 	toReturn.offset = raw & 0x7ff
 	return &toReturn, nil
 }
 
 func parseLongBranchAndLinkInstruction(raw uint16) (THUMBInstruction, error) {
-	var toReturn longBranchAndLinkInstruction
+	var toReturn LongBranchAndLinkInstruction
 	toReturn.raw = raw
 	toReturn.offset = raw & 0x7ff
 	toReturn.offsetLow = (raw & 0x800) != 0
@@ -603,7 +603,7 @@ func ParseTHUMBInstruction(raw uint16) (THUMBInstruction, error) {
 				if (raw & 0x1000) != 0 {
 					return parseLongBranchAndLinkInstruction(raw)
 				}
-				return parseUnconditionalBranchInstruction(raw)
+				return parseUnConditionalBranchInstruction(raw)
 			}
 			if (raw & 0x3000) != 0 {
 				if (raw & 0x0f00) == 0x0f00 {

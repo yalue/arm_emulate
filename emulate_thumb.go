@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func (n *moveShiftedRegisterInstruction) Emulate(p ARMProcessor) error {
+func (n *MoveShiftedRegisterInstruction) Emulate(p ARMProcessor) error {
 	value, _ := p.GetRegister(n.rs)
 	var result uint32
 	switch n.operation {
@@ -48,7 +48,7 @@ func (n *moveShiftedRegisterInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *addSubtractInstruction) Emulate(p ARMProcessor) error {
+func (n *AddSubtractInstruction) Emulate(p ARMProcessor) error {
 	start, _ := p.GetRegister(n.rs)
 	var difference uint32
 	if n.isImmediate {
@@ -72,7 +72,7 @@ func (n *addSubtractInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *moveCompareAddSubtractImmediateInstruction) Emulate(
+func (n *MoveCompareAddSubtractImmediateInstruction) Emulate(
 	p ARMProcessor) error {
 	var newValue uint32
 	startValue, _ := p.GetRegister(n.rd)
@@ -107,7 +107,7 @@ func (n *moveCompareAddSubtractImmediateInstruction) Emulate(
 	return nil
 }
 
-func (n *aluOperationInstruction) Emulate(p ARMProcessor) error {
+func (n *ALUOperationInstruction) Emulate(p ARMProcessor) error {
 	a, _ := p.GetRegister(n.rd)
 	b, _ := p.GetRegister(n.rs)
 	result, storeResult, e := n.opcode.Evaluate(a, b, p)
@@ -120,7 +120,7 @@ func (n *aluOperationInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *highRegisterOperationInstruction) Emulate(p ARMProcessor) error {
+func (n *HighRegisterOperationInstruction) Emulate(p ARMProcessor) error {
 	a, _ := p.GetRegister(n.rd)
 	if n.rd.Register() == 15 {
 		a += 2
@@ -154,7 +154,7 @@ func (n *highRegisterOperationInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *pcRelativeLoadInstruction) Emulate(p ARMProcessor) error {
+func (n *PcRelativeLoadInstruction) Emulate(p ARMProcessor) error {
 	base, _ := p.GetRegisterNumber(15)
 	base += 2
 	base &= 0xfffffffc
@@ -167,7 +167,7 @@ func (n *pcRelativeLoadInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *loadStoreRegisterOffsetInstruction) Emulate(p ARMProcessor) error {
+func (n *LoadStoreRegisterOffsetInstruction) Emulate(p ARMProcessor) error {
 	base, _ := p.GetRegister(n.rb)
 	offset, _ := p.GetRegister(n.ro)
 	base += offset
@@ -200,7 +200,7 @@ func (n *loadStoreRegisterOffsetInstruction) Emulate(p ARMProcessor) error {
 	return nil
 }
 
-func (n *loadStoreSignExtendedHalfwordInstruction) Emulate(
+func (n *LoadStoreSignExtendedHalfwordInstruction) Emulate(
 	p ARMProcessor) error {
 	address, _ := p.GetRegister(n.rb)
 	offset, _ := p.GetRegister(n.ro)
@@ -237,7 +237,7 @@ func (n *loadStoreSignExtendedHalfwordInstruction) Emulate(
 	return e
 }
 
-func (n *loadStoreImmediateOffsetInstruction) Emulate(p ARMProcessor) error {
+func (n *LoadStoreImmediateOffsetInstruction) Emulate(p ARMProcessor) error {
 	address, _ := p.GetRegister(n.rb)
 	m := p.GetMemoryInterface()
 	if n.byteQuantity {
@@ -269,7 +269,7 @@ func (n *loadStoreImmediateOffsetInstruction) Emulate(p ARMProcessor) error {
 	return m.WriteMemoryWord(address, toStore)
 }
 
-func (n *loadStoreHalfwordInstruction) Emulate(p ARMProcessor) error {
+func (n *LoadStoreHalfwordInstruction) Emulate(p ARMProcessor) error {
 	address, _ := p.GetRegister(n.rb)
 	address += uint32(n.offset) << 1
 	m := p.GetMemoryInterface()
@@ -284,7 +284,7 @@ func (n *loadStoreHalfwordInstruction) Emulate(p ARMProcessor) error {
 	return m.WriteMemoryHalfword(address, uint16(toWrite))
 }
 
-func (n *spRelativeLoadStoreInstruction) Emulate(p ARMProcessor) error {
+func (n *SPRelativeLoadStoreInstruction) Emulate(p ARMProcessor) error {
 	address, _ := p.GetRegisterNumber(13)
 	address += uint32(n.offset) << 2
 	m := p.GetMemoryInterface()
@@ -299,7 +299,7 @@ func (n *spRelativeLoadStoreInstruction) Emulate(p ARMProcessor) error {
 	return m.WriteMemoryWord(address, value)
 }
 
-func (n *loadAddressInstruction) Emulate(p ARMProcessor) error {
+func (n *LoadAddressInstruction) Emulate(p ARMProcessor) error {
 	var value uint32
 	if n.loadSP {
 		value, _ = p.GetRegisterNumber(13)
@@ -312,7 +312,7 @@ func (n *loadAddressInstruction) Emulate(p ARMProcessor) error {
 	return p.SetRegister(n.rd, value)
 }
 
-func (n *addToStackPointerInstruction) Emulate(p ARMProcessor) error {
+func (n *AddToStackPointerInstruction) Emulate(p ARMProcessor) error {
 	start, _ := p.GetRegisterNumber(13)
 	offset := uint32(n.offset) << 2
 	if n.negative {
@@ -323,7 +323,7 @@ func (n *addToStackPointerInstruction) Emulate(p ARMProcessor) error {
 	return p.SetRegisterNumber(13, start)
 }
 
-func (n *pushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
+func (n *PushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
 	baseAddress, _ := p.GetRegisterNumber(13)
 	bits := n.registerList
 	toStore := make([]uint32, 0, 9)
@@ -360,7 +360,7 @@ func (n *pushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
 	return nil
 }
 
-func (n *pushPopRegistersInstruction) popRegisters(p ARMProcessor) error {
+func (n *PushPopRegistersInstruction) popRegisters(p ARMProcessor) error {
 	baseAddress, _ := p.GetRegisterNumber(13)
 	bits := n.registerList
 	toLoad := make([]uint8, 0, 9)
@@ -388,14 +388,14 @@ func (n *pushPopRegistersInstruction) popRegisters(p ARMProcessor) error {
 	return nil
 }
 
-func (n *pushPopRegistersInstruction) Emulate(p ARMProcessor) error {
+func (n *PushPopRegistersInstruction) Emulate(p ARMProcessor) error {
 	if n.load {
 		return n.popRegisters(p)
 	}
 	return n.pushRegisters(p)
 }
 
-func (n *multipleLoadStoreInstruction) multipleStoreTHUMB(
+func (n *MultipleLoadStoreInstruction) multipleStoreTHUMB(
 	p ARMProcessor) error {
 	baseAddress, _ := p.GetRegister(n.rb)
 	bits := n.registerList
@@ -421,7 +421,7 @@ func (n *multipleLoadStoreInstruction) multipleStoreTHUMB(
 	return p.SetRegister(n.rb, baseAddress)
 }
 
-func (n *multipleLoadStoreInstruction) multipleLoadTHUMB(
+func (n *MultipleLoadStoreInstruction) multipleLoadTHUMB(
 	p ARMProcessor) error {
 	baseAddress, _ := p.GetRegister(n.rb)
 	bits := n.registerList
@@ -447,14 +447,14 @@ func (n *multipleLoadStoreInstruction) multipleLoadTHUMB(
 	return p.SetRegister(n.rb, baseAddress)
 }
 
-func (n *multipleLoadStoreInstruction) Emulate(p ARMProcessor) error {
+func (n *MultipleLoadStoreInstruction) Emulate(p ARMProcessor) error {
 	if n.load {
 		return n.multipleLoadTHUMB(p)
 	}
 	return n.multipleStoreTHUMB(p)
 }
 
-func (n *conditionalBranchInstruction) Emulate(p ARMProcessor) error {
+func (n *ConditionalBranchInstruction) Emulate(p ARMProcessor) error {
 	if !n.condition.IsMet(p) {
 		return nil
 	}
@@ -465,7 +465,7 @@ func (n *conditionalBranchInstruction) Emulate(p ARMProcessor) error {
 	return p.SetRegisterNumber(15, address)
 }
 
-func (n *softwareInterruptTHUMBInstruction) Emulate(p ARMProcessor) error {
+func (n *SoftwareInterruptTHUMBInstruction) Emulate(p ARMProcessor) error {
 	currentPC, _ := p.GetRegisterNumber(15)
 	e := p.SetMode(0x13)
 	if e != nil {
@@ -476,7 +476,7 @@ func (n *softwareInterruptTHUMBInstruction) Emulate(p ARMProcessor) error {
 	return p.SetTHUMBMode(false)
 }
 
-func (n *unconditionalBranchInstruction) Emulate(p ARMProcessor) error {
+func (n *unConditionalBranchInstruction) Emulate(p ARMProcessor) error {
 	offset := (int32(n.offset) << 21) >> 20
 	current, _ := p.GetRegisterNumber(15)
 	current += 2
@@ -484,7 +484,7 @@ func (n *unconditionalBranchInstruction) Emulate(p ARMProcessor) error {
 	return p.SetRegisterNumber(15, target)
 }
 
-func (n *longBranchAndLinkInstruction) Emulate(p ARMProcessor) error {
+func (n *LongBranchAndLinkInstruction) Emulate(p ARMProcessor) error {
 	currentPC, _ := p.GetRegisterNumber(15)
 	if n.offsetLow {
 		currentLR, _ := p.GetRegisterNumber(14)
