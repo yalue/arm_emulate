@@ -22,6 +22,7 @@ const (
 	undefinedSet             uint32 = 0x06000010
 )
 
+// This is the main interface which all 32-bit ARM instructions support.
 type ARMInstruction interface {
 	fmt.Stringer
 	Raw() uint32
@@ -52,280 +53,281 @@ func (n *basicARMInstruction) String() string {
 
 type DataProcessingInstruction struct {
 	basicARMInstruction
-	opcode        ARMDataProcessingOpcode
-	rm            ARMRegister
-	shift         ARMShift
-	immediate     uint8
-	rotate        uint8
-	rd            ARMRegister
-	rn            ARMRegister
-	setConditions bool
-	isImmediate   bool
+	Opcode        ARMDataProcessingOpcode
+	Rm            ARMRegister
+	Shift         ARMShift
+	Immediate     uint8
+	Rotate        uint8
+	Rd            ARMRegister
+	Rn            ARMRegister
+	SetConditions bool
+	IsImmediate   bool
 }
 
 func (n *DataProcessingInstruction) secondOperand() string {
-	if n.isImmediate {
-		r := n.rotate << 1
-		value := uint32(n.immediate)
+	if n.IsImmediate {
+		r := n.Rotate << 1
+		value := uint32(n.Immediate)
 		value = (value >> r) | (value << (32 - r))
 		return fmt.Sprintf("%d", value)
 	}
-	toReturn := n.rm.String()
-	if n.shift.UseRegister() || (n.shift.Amount() != 0) {
+	toReturn := n.Rm.String()
+	if n.Shift.UseRegister() || (n.Shift.Amount() != 0) {
 		toReturn += " "
 	}
-	return fmt.Sprintf("%s%s", toReturn, n.shift)
+	return fmt.Sprintf("%s%s", toReturn, n.Shift)
 }
 
 func (n *DataProcessingInstruction) String() string {
-	prefix := n.opcode.String()
+	prefix := n.Opcode.String()
 	prefix += n.condition.String()
-	opcodeValue := n.opcode.Value()
+	opcodeValue := n.Opcode.Value()
 	switch opcodeValue {
 	case movARMOpcode, mvnARMOpcode:
-		if n.setConditions {
+		if n.SetConditions {
 			prefix += "s"
 		}
-		return fmt.Sprintf("%s %s, %s", prefix, n.rd, n.secondOperand())
+		return fmt.Sprintf("%s %s, %s", prefix, n.Rd, n.secondOperand())
 	case tstARMOpcode, teqARMOpcode, cmnARMOpcode, cmpARMOpcode:
-		return fmt.Sprintf("%s %s, %s", prefix, n.rn, n.secondOperand())
+		return fmt.Sprintf("%s %s, %s", prefix, n.Rn, n.secondOperand())
 	}
-	if n.setConditions {
+	if n.SetConditions {
 		prefix += "s"
 	}
-	return fmt.Sprintf("%s %s, %s, %s", prefix, n.rd, n.rn, n.secondOperand())
+	return fmt.Sprintf("%s %s, %s, %s", prefix, n.Rd, n.Rn, n.secondOperand())
 }
 
 type PSRTransferInstruction struct {
 	basicARMInstruction
-	rm          ARMRegister
-	rd          ARMRegister
-	isImmediate bool
-	writePSR    bool
-	useCPSR     bool
-	flagsOnly   bool
-	immediate   uint8
-	rotate      uint8
+	Rm          ARMRegister
+	Rd          ARMRegister
+	IsImmediate bool
+	WritePSR    bool
+	UseCPSR     bool
+	FlagsOnly   bool
+	Immediate   uint8
+	Rotate      uint8
 }
 
 func (n *PSRTransferInstruction) String() string {
 	var usedPSR string
-	if n.useCPSR {
+	if n.UseCPSR {
 		usedPSR = "cpsr"
 	} else {
 		usedPSR = "spsr"
 	}
-	if !n.writePSR {
-		return fmt.Sprintf("mrs%s %s, %s", n.condition, n.rd, usedPSR)
+	if !n.WritePSR {
+		return fmt.Sprintf("mrs%s %s, %s", n.condition, n.Rd, usedPSR)
 	}
-	if !n.flagsOnly {
-		return fmt.Sprintf("msr%s %s, %s", n.condition, n.rm, usedPSR)
+	if !n.FlagsOnly {
+		return fmt.Sprintf("msr%s %s, %s", n.condition, n.Rm, usedPSR)
 	}
 	usedPSR += "_flags"
-	if n.isImmediate {
-		r := n.rotate << 1
-		value := uint32(n.immediate)
+	if n.IsImmediate {
+		r := n.Rotate << 1
+		value := uint32(n.Immediate)
 		value = (value >> r) | (value << (32 - r))
 		return fmt.Sprintf("msr%s %s, %d", n.condition, usedPSR, value)
 	}
-	return fmt.Sprintf("msr%s %s, %s", n.condition, usedPSR, n.rm)
+	return fmt.Sprintf("msr%s %s, %s", n.condition, usedPSR, n.Rm)
 }
 
+// This includes both multiply and long multiply instructions
 type MultiplyInstruction struct {
 	basicARMInstruction
-	isLongMultiply bool
-	rm             ARMRegister
-	rn             ARMRegister
-	rs             ARMRegister
-	rd             ARMRegister
-	rdLow          ARMRegister
-	rdHigh         ARMRegister
-	setConditions  bool
-	accumulate     bool
-	signed         bool
+	IsLongMultiply bool
+	Rm             ARMRegister
+	Rn             ARMRegister
+	Rs             ARMRegister
+	Rd             ARMRegister
+	RdLow          ARMRegister
+	RdHigh         ARMRegister
+	SetConditions  bool
+	Accumulate     bool
+	Signed         bool
 }
 
 func (n *MultiplyInstruction) String() string {
 	var start string
-	if n.accumulate {
+	if n.Accumulate {
 		start = "mla"
 	} else {
 		start = "mul"
 	}
-	if n.isLongMultiply {
-		if n.signed {
+	if n.IsLongMultiply {
+		if n.Signed {
 			start = "s" + start + "l"
 		} else {
 			start = "u" + start + "l"
 		}
 	}
 	start += n.condition.String()
-	if n.setConditions {
+	if n.SetConditions {
 		start += "s"
 	}
-	if n.isLongMultiply {
-		return fmt.Sprintf("%s %s, %s, %s, %s", start, n.rdLow, n.rdHigh, n.rm,
-			n.rs)
+	if n.IsLongMultiply {
+		return fmt.Sprintf("%s %s, %s, %s, %s", start, n.RdLow, n.RdHigh, n.Rm,
+			n.Rs)
 	}
-	if !n.accumulate {
-		return fmt.Sprintf("%s %s, %s, %s", start, n.rd, n.rm, n.rs)
+	if !n.Accumulate {
+		return fmt.Sprintf("%s %s, %s, %s", start, n.Rd, n.Rm, n.Rs)
 	}
-	return fmt.Sprintf("%s %s, %s, %s, %s", start, n.rd, n.rm, n.rs, n.rn)
+	return fmt.Sprintf("%s %s, %s, %s, %s", start, n.Rd, n.Rm, n.Rs, n.Rn)
 }
 
 type SingleDataSwapInstruction struct {
 	basicARMInstruction
-	rm           ARMRegister
-	rn           ARMRegister
-	rd           ARMRegister
-	byteQuantity bool
+	Rm           ARMRegister
+	Rn           ARMRegister
+	Rd           ARMRegister
+	ByteQuantity bool
 }
 
 func (n *SingleDataSwapInstruction) String() string {
 	start := "swp"
 	start += n.condition.String()
-	if n.byteQuantity {
+	if n.ByteQuantity {
 		start += "b"
 	}
-	return fmt.Sprintf("%s %s, %s, [%s]", start, n.rd, n.rm, n.rn)
+	return fmt.Sprintf("%s %s, %s, [%s]", start, n.Rd, n.Rm, n.Rn)
 }
 
 type BranchExchangeInstruction struct {
 	basicARMInstruction
-	rn ARMRegister
+	Rn ARMRegister
 }
 
 func (n *BranchExchangeInstruction) String() string {
-	return fmt.Sprintf("bx%s %s", n.condition, n.rn)
+	return fmt.Sprintf("bx%s %s", n.condition, n.Rn)
 }
 
 type HalfwordDataTransferInstruction struct {
 	basicARMInstruction
-	isImmediate bool
-	halfword    bool
-	signed      bool
-	rm          ARMRegister
-	rn          ARMRegister
-	rd          ARMRegister
-	offset      uint8
-	load        bool
-	writeBack   bool
-	up          bool
-	preindex    bool
+	IsImmediate bool
+	Halfword    bool
+	Signed      bool
+	Rm          ARMRegister
+	Rn          ARMRegister
+	Rd          ARMRegister
+	Offset      uint8
+	Load        bool
+	WriteBack   bool
+	Up          bool
+	Preindex    bool
 }
 
 func (n *HalfwordDataTransferInstruction) String() string {
 	var start string
-	if n.load {
+	if n.Load {
 		start = "ldr"
 	} else {
 		start = "str"
 	}
 	start += n.condition.String()
-	if n.signed {
+	if n.Signed {
 		start += "s"
 	}
-	if n.halfword {
+	if n.Halfword {
 		start += "h"
 	} else {
 		start += "b"
 	}
-	start += " " + n.rd.String() + ","
-	offset := int(n.offset)
-	offsetReg := n.rm.String()
-	if n.rn.Register() == 15 {
+	start += " " + n.Rd.String() + ","
+	offset := int(n.Offset)
+	offsetReg := n.Rm.String()
+	if n.Rn.Register() == 15 {
 		offset += 8
 	}
-	if !n.up {
+	if !n.Up {
 		offset = -offset
 		offsetReg = "-" + offsetReg
 	}
-	if n.isImmediate && n.preindex && !n.writeBack && (n.rn.Register() == 15) {
+	if n.IsImmediate && n.Preindex && !n.WriteBack && (n.Rn.Register() == 15) {
 		return fmt.Sprintf("%s %d", start, offset)
 	}
-	if n.preindex {
+	if n.Preindex {
 		postfix := ""
-		if n.writeBack {
+		if n.WriteBack {
 			postfix = "!"
 		}
-		if n.isImmediate {
-			if n.offset == 0 {
-				return fmt.Sprintf("%s [%s]%s", start, n.rn, postfix)
+		if n.IsImmediate {
+			if n.Offset == 0 {
+				return fmt.Sprintf("%s [%s]%s", start, n.Rn, postfix)
 			}
-			return fmt.Sprintf("%s [%s, %d]%s", start, n.rn, offset, postfix)
+			return fmt.Sprintf("%s [%s, %d]%s", start, n.Rn, offset, postfix)
 		}
-		return fmt.Sprintf("%s [%s, %s]%s", start, n.rn, offsetReg, postfix)
+		return fmt.Sprintf("%s [%s, %s]%s", start, n.Rn, offsetReg, postfix)
 	}
-	if n.isImmediate {
-		return fmt.Sprintf("%s [%s], %d", start, n.rn, offset)
+	if n.IsImmediate {
+		return fmt.Sprintf("%s [%s], %d", start, n.Rn, offset)
 	}
-	return fmt.Sprintf("%s [%s], %s", start, n.rn, offsetReg)
+	return fmt.Sprintf("%s [%s], %s", start, n.Rn, offsetReg)
 }
 
 type SingleDataTransferInstruction struct {
 	basicARMInstruction
-	rn              ARMRegister
-	rd              ARMRegister
-	rm              ARMRegister
-	shift           ARMShift
-	offset          uint16
-	load            bool
-	writeBack       bool
-	byteQuantity    bool
-	up              bool
-	preindex        bool
-	immediateOffset bool
+	Rn              ARMRegister
+	Rd              ARMRegister
+	Rm              ARMRegister
+	Shift           ARMShift
+	Offset          uint16
+	Load            bool
+	WriteBack       bool
+	ByteQuantity    bool
+	Up              bool
+	Preindex        bool
+	ImmediateOffset bool
 }
 
 func (n *SingleDataTransferInstruction) String() string {
 	var start string
-	if n.load {
+	if n.Load {
 		start = "ldr"
 	} else {
 		start = "str"
 	}
 	start += n.condition.String()
-	if n.byteQuantity {
+	if n.ByteQuantity {
 		start += "b"
 	}
-	if !n.preindex && n.writeBack {
+	if !n.Preindex && n.WriteBack {
 		start += "t"
 	}
-	start += " " + n.rd.String() + ","
+	start += " " + n.Rd.String() + ","
 	upString := ""
-	if !n.up {
+	if !n.Up {
 		upString = "-"
 	}
 	shiftString := ""
-	if !n.immediateOffset && (n.shift.Amount() != 0) {
-		shiftString = ", " + n.shift.String()
+	if !n.ImmediateOffset && (n.Shift.Amount() != 0) {
+		shiftString = ", " + n.Shift.String()
 	}
-	offset := int(n.offset)
-	if n.rn.Register() == 15 {
+	offset := int(n.Offset)
+	if n.Rn.Register() == 15 {
 		offset += 8
 	}
-	if n.preindex {
+	if n.Preindex {
 		postfix := ""
-		if n.writeBack {
+		if n.WriteBack {
 			postfix = "!"
 		}
-		if n.immediateOffset {
-			if (n.rn.Register() == 15) && (offset != 0) {
+		if n.ImmediateOffset {
+			if (n.Rn.Register() == 15) && (offset != 0) {
 				return fmt.Sprintf("%s %s%d", start, upString, offset)
 			}
 			if offset == 0 {
-				return fmt.Sprintf("%s [%s]%s", start, n.rn, postfix)
+				return fmt.Sprintf("%s [%s]%s", start, n.Rn, postfix)
 			}
-			return fmt.Sprintf("%s [%s, %s%d]%s", start, n.rn, upString,
+			return fmt.Sprintf("%s [%s, %s%d]%s", start, n.Rn, upString,
 				offset, postfix)
 		}
-		return fmt.Sprintf("%s [%s, %s%s%s]%s", start, n.rn, upString, n.rm,
+		return fmt.Sprintf("%s [%s, %s%s%s]%s", start, n.Rn, upString, n.Rm,
 			shiftString, postfix)
 	}
-	if n.immediateOffset {
-		return fmt.Sprintf("%s [%s], %s%d", start, n.rn, upString, offset)
+	if n.ImmediateOffset {
+		return fmt.Sprintf("%s [%s], %s%d", start, n.Rn, upString, offset)
 	}
-	return fmt.Sprintf("%s [%s], %s%s%s", start, n.rn, upString, n.rm,
+	return fmt.Sprintf("%s [%s], %s%s%s", start, n.Rn, upString, n.Rm,
 		shiftString)
 }
 
@@ -335,20 +337,20 @@ type UndefinedInstruction struct {
 
 type BlockDataTransferInstruction struct {
 	basicARMInstruction
-	registerList uint16
-	rn           ARMRegister
-	load         bool
-	writeBack    bool
-	forceUser    bool
-	up           bool
-	preindex     bool
+	RegisterList uint16
+	Rn           ARMRegister
+	Load         bool
+	WriteBack    bool
+	ForceUser    bool
+	Up           bool
+	Preindex     bool
 }
 
 func (n *BlockDataTransferInstruction) listString() string {
 	var s string
 	consecutive := uint8(0)
 	s = "{"
-	registers := n.registerList
+	registers := n.RegisterList
 	// The 17th iteration will always be a 0 bit, but it is still necessary if
 	// r15 was set.
 	for i := uint8(0); i < 17; i++ {
@@ -377,47 +379,47 @@ func (n *BlockDataTransferInstruction) listString() string {
 
 func (n *BlockDataTransferInstruction) String() string {
 	var start string
-	if n.load {
+	if n.Load {
 		start = "ldm"
 	} else {
 		start = "stm"
 	}
 	// The mnemonic postfix depends on the u and p bits and stack usage
-	if n.rn.Register() == 13 {
-		if n.up {
-			if n.preindex {
+	if n.Rn.Register() == 13 {
+		if n.Up {
+			if n.Preindex {
 				start += "ed"
 			} else {
 				start += "fd"
 			}
 		} else {
-			if n.preindex {
+			if n.Preindex {
 				start += "ea"
 			} else {
 				start += "fa"
 			}
 		}
 	} else {
-		if n.up {
-			if n.preindex {
+		if n.Up {
+			if n.Preindex {
 				start += "ib"
 			} else {
 				start += "ia"
 			}
 		} else {
-			if n.preindex {
+			if n.Preindex {
 				start += "db"
 			} else {
 				start += "da"
 			}
 		}
 	}
-	start += " " + n.rn.String()
-	if n.writeBack {
+	start += " " + n.Rn.String()
+	if n.WriteBack {
 		start += "!"
 	}
 	start += ", " + n.listString()
-	if n.forceUser {
+	if n.ForceUser {
 		start += "^"
 	}
 	return start
@@ -425,119 +427,119 @@ func (n *BlockDataTransferInstruction) String() string {
 
 type BranchInstruction struct {
 	basicARMInstruction
-	offset int32
-	link   bool
+	Offset int32
+	Link   bool
 }
 
 func (n *BranchInstruction) String() string {
 	start := "b"
-	if n.link {
+	if n.Link {
 		start += "l"
 	}
 	start += n.condition.String()
 	// Sign extend and shift right by 2 bits...
-	offset := n.offset << 8
+	offset := n.Offset << 8
 	offset = offset >> 6
 	return fmt.Sprintf("%s %d", start, offset)
 }
 
 type CoprocDataTransferInstruction struct {
 	basicARMInstruction
-	rn           ARMRegister
-	coprocNumber uint8
-	coprocRd     uint8
-	offset       uint8
-	load         bool
-	writeBack    bool
-	longTransfer bool
-	up           bool
-	preindex     bool
+	Rn           ARMRegister
+	CoprocNumber uint8
+	CoprocRd     uint8
+	Offset       uint8
+	Load         bool
+	WriteBack    bool
+	LongTransfer bool
+	Up           bool
+	Preindex     bool
 }
 
 func (n *CoprocDataTransferInstruction) String() string {
 	var start string
-	if n.load {
+	if n.Load {
 		start = "ldc"
 	} else {
 		start = "stc"
 	}
 	start += n.condition.String()
-	if n.longTransfer {
+	if n.LongTransfer {
 		start += "l"
 	}
-	start += fmt.Sprintf(" p%d, c%d,", n.coprocNumber, n.coprocRd)
-	offset := int(n.offset) << 2
-	if !n.up {
+	start += fmt.Sprintf(" p%d, c%d,", n.CoprocNumber, n.CoprocRd)
+	offset := int(n.Offset) << 2
+	if !n.Up {
 		offset = -offset
 	}
-	if n.rn.Register() == 15 {
+	if n.Rn.Register() == 15 {
 		offset += 8
 	}
-	if n.preindex {
+	if n.Preindex {
 		postfix := ""
-		if n.writeBack {
+		if n.WriteBack {
 			postfix = "!"
 		}
-		if !n.writeBack && (n.rn.Register() == 15) {
+		if !n.WriteBack && (n.Rn.Register() == 15) {
 			return fmt.Sprintf("%s %d", start, offset)
 		}
-		if n.offset == 0 {
-			return fmt.Sprintf("%s [%s]%s", start, n.rn, postfix)
+		if n.Offset == 0 {
+			return fmt.Sprintf("%s [%s]%s", start, n.Rn, postfix)
 		}
-		return fmt.Sprintf("%s [%s, %d]%s", start, n.rn, offset, postfix)
+		return fmt.Sprintf("%s [%s, %d]%s", start, n.Rn, offset, postfix)
 	}
-	if n.offset == 0 {
-		return fmt.Sprintf("%s %s", start, n.rn)
+	if n.Offset == 0 {
+		return fmt.Sprintf("%s %s", start, n.Rn)
 	}
-	return fmt.Sprintf("%s [%s], %d", start, n.rn, offset)
+	return fmt.Sprintf("%s [%s], %d", start, n.Rn, offset)
 }
 
 type CoprocDataOperationInstruction struct {
 	basicARMInstruction
-	coprocNumber uint8
-	coprocOpcode uint8
-	coprocInfo   uint8
-	coprocRn     uint8
-	coprocRd     uint8
-	coprocRm     uint8
+	CoprocNumber uint8
+	CoprocOpcode uint8
+	CoprocInfo   uint8
+	CoprocRn     uint8
+	CoprocRd     uint8
+	CoprocRm     uint8
 }
 
 func (n *CoprocDataOperationInstruction) String() string {
 	return fmt.Sprintf("cdp%s p%d, %d, c%d, c%d, c%d, %d", n.condition,
-		n.coprocNumber, n.coprocOpcode, n.coprocRd, n.coprocRn, n.coprocRm,
-		n.coprocInfo)
+		n.CoprocNumber, n.CoprocOpcode, n.CoprocRd, n.CoprocRn, n.CoprocRm,
+		n.CoprocInfo)
 }
 
 type CoprocRegisterTransferInstruction struct {
 	basicARMInstruction
-	rd            ARMRegister
-	load          bool
-	coprocNumber  uint8
-	coprocOpcode  uint8
-	coprocOperand uint8
-	coprocRn      uint8
-	coprocRm      uint8
+	Rd            ARMRegister
+	Load          bool
+	CoprocNumber  uint8
+	CoprocOpcode  uint8
+	CoprocOperand uint8
+	CoprocRn      uint8
+	CoprocRm      uint8
 }
 
 func (n *CoprocRegisterTransferInstruction) String() string {
 	var start string
-	if n.load {
+	if n.Load {
 		start = "mrc"
 	} else {
 		start = "mcr"
 	}
 	start += n.condition.String()
-	return fmt.Sprintf("%s p%d, %d, %s, c%d, c%d, %d", start, n.coprocNumber,
-		n.coprocOpcode, n.rd, n.coprocRn, n.coprocRm, n.coprocOperand)
+	return fmt.Sprintf("%s p%d, %d, %s, c%d, c%d, %d", start, n.CoprocNumber,
+		n.CoprocOpcode, n.Rd, n.CoprocRn, n.CoprocRm, n.CoprocOperand)
 }
 
 type SoftwareInterruptInstruction struct {
 	basicARMInstruction
-	comment uint32
+	Comment uint32
 }
 
 func (n *SoftwareInterruptInstruction) String() string {
-	return fmt.Sprintf("swi%s %08x", n.condition, n.comment)
+	return fmt.Sprintf("swi%s %08x", n.condition, n.Comment)
 }
 
 func getCondition(raw uint32) ARMCondition {
@@ -548,7 +550,7 @@ func parseSoftwareInterruptInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn SoftwareInterruptInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.comment = raw & 0x00ffffff
+	toReturn.Comment = raw & 0x00ffffff
 	return &toReturn, nil
 }
 
@@ -557,13 +559,13 @@ func parseCoprocRegisterTransferInstruction(raw uint32) (ARMInstruction,
 	var toReturn CoprocRegisterTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
-	toReturn.load = (raw & 0x100000) != 0
-	toReturn.coprocNumber = uint8((raw >> 8) & 0xf)
-	toReturn.coprocOpcode = uint8((raw >> 21) & 0x7)
-	toReturn.coprocOperand = uint8((raw >> 5) & 0x7)
-	toReturn.coprocRm = uint8(raw & 0xf)
-	toReturn.coprocRn = uint8((raw >> 16) & 0xf)
+	toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+	toReturn.Load = (raw & 0x100000) != 0
+	toReturn.CoprocNumber = uint8((raw >> 8) & 0xf)
+	toReturn.CoprocOpcode = uint8((raw >> 21) & 0x7)
+	toReturn.CoprocOperand = uint8((raw >> 5) & 0x7)
+	toReturn.CoprocRm = uint8(raw & 0xf)
+	toReturn.CoprocRn = uint8((raw >> 16) & 0xf)
 	return &toReturn, nil
 }
 
@@ -571,12 +573,12 @@ func parseCoprocDataOperationInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn CoprocDataOperationInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.coprocNumber = uint8((raw >> 8) & 0xf)
-	toReturn.coprocRm = uint8(raw & 0xf)
-	toReturn.coprocRd = uint8((raw >> 12) & 0xf)
-	toReturn.coprocRn = uint8((raw >> 16) & 0xf)
-	toReturn.coprocOpcode = uint8((raw >> 20) & 0xf)
-	toReturn.coprocInfo = uint8((raw >> 5) & 0x7)
+	toReturn.CoprocNumber = uint8((raw >> 8) & 0xf)
+	toReturn.CoprocRm = uint8(raw & 0xf)
+	toReturn.CoprocRd = uint8((raw >> 12) & 0xf)
+	toReturn.CoprocRn = uint8((raw >> 16) & 0xf)
+	toReturn.CoprocOpcode = uint8((raw >> 20) & 0xf)
+	toReturn.CoprocInfo = uint8((raw >> 5) & 0x7)
 	return &toReturn, nil
 }
 
@@ -584,15 +586,15 @@ func parseCoprocDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn CoprocDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.offset = uint8(raw & 0xff)
-	toReturn.coprocNumber = uint8((raw >> 8) & 0xf)
-	toReturn.coprocRd = uint8((raw >> 12) & 0xf)
-	toReturn.load = (raw & 0x100000) != 0
-	toReturn.writeBack = (raw & 0x200000) != 0
-	toReturn.longTransfer = (raw & 0x400000) != 0
-	toReturn.up = (raw & 0x800000) != 0
-	toReturn.preindex = (raw & 0x1000000) != 0
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.Offset = uint8(raw & 0xff)
+	toReturn.CoprocNumber = uint8((raw >> 8) & 0xf)
+	toReturn.CoprocRd = uint8((raw >> 12) & 0xf)
+	toReturn.Load = (raw & 0x100000) != 0
+	toReturn.WriteBack = (raw & 0x200000) != 0
+	toReturn.LongTransfer = (raw & 0x400000) != 0
+	toReturn.Up = (raw & 0x800000) != 0
+	toReturn.Preindex = (raw & 0x1000000) != 0
 	return &toReturn, nil
 }
 
@@ -600,8 +602,8 @@ func parseBranchInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn BranchInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.offset = int32(raw) & int32(0x00ffffff)
-	toReturn.link = (raw & 0x1000000) != 0
+	toReturn.Offset = int32(raw) & int32(0x00ffffff)
+	toReturn.Link = (raw & 0x1000000) != 0
 	return &toReturn, nil
 }
 
@@ -609,13 +611,13 @@ func parseBlockDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn BlockDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.registerList = uint16(raw & 0xffff)
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.load = (raw & 0x100000) != 0
-	toReturn.writeBack = (raw & 0x200000) != 0
-	toReturn.forceUser = (raw & 0x400000) != 0
-	toReturn.up = (raw & 0x800000) != 0
-	toReturn.preindex = (raw & 0x1000000) != 0
+	toReturn.RegisterList = uint16(raw & 0xffff)
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.Load = (raw & 0x100000) != 0
+	toReturn.WriteBack = (raw & 0x200000) != 0
+	toReturn.ForceUser = (raw & 0x400000) != 0
+	toReturn.Up = (raw & 0x800000) != 0
+	toReturn.Preindex = (raw & 0x1000000) != 0
 	return &toReturn, nil
 }
 
@@ -630,28 +632,28 @@ func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn SingleDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.immediateOffset = (raw & 0x2000000) == 0
-	if !toReturn.immediateOffset {
-		toReturn.shift = NewARMShift(uint8((raw >> 4) & 0xff))
+	toReturn.ImmediateOffset = (raw & 0x2000000) == 0
+	if !toReturn.ImmediateOffset {
+		toReturn.Shift = NewARMShift(uint8((raw >> 4) & 0xff))
 		// This shouldn't happen as along as the undefined instruction mask is
 		// checked before the single data transfer instruction mask
-		if toReturn.shift.UseRegister() {
+		if toReturn.Shift.UseRegister() {
 			var errorInstruction UndefinedInstruction
 			errorInstruction.raw = raw
 			errorInstruction.condition = toReturn.condition
 			return &errorInstruction, fmt.Errorf("Illegal shift")
 		}
-		toReturn.rm = NewARMRegister(uint8(raw & 0xf))
+		toReturn.Rm = NewARMRegister(uint8(raw & 0xf))
 	} else {
-		toReturn.offset = uint16(raw & 0xfff)
+		toReturn.Offset = uint16(raw & 0xfff)
 	}
-	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.load = (raw & 0x100000) != 0
-	toReturn.writeBack = (raw & 0x200000) != 0
-	toReturn.byteQuantity = (raw & 0x400000) != 0
-	toReturn.up = (raw & 0x800000) != 0
-	toReturn.preindex = (raw & 0x1000000) != 0
+	toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.Load = (raw & 0x100000) != 0
+	toReturn.WriteBack = (raw & 0x200000) != 0
+	toReturn.ByteQuantity = (raw & 0x400000) != 0
+	toReturn.Up = (raw & 0x800000) != 0
+	toReturn.Preindex = (raw & 0x1000000) != 0
 	return &toReturn, nil
 }
 
@@ -659,20 +661,20 @@ func parseHalfwordDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn HalfwordDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.isImmediate = (raw & 0x400000) != 0
-	if toReturn.isImmediate {
-		toReturn.offset = uint8((raw & 0xf) | ((raw >> 4) & 0xf0))
+	toReturn.IsImmediate = (raw & 0x400000) != 0
+	if toReturn.IsImmediate {
+		toReturn.Offset = uint8((raw & 0xf) | ((raw >> 4) & 0xf0))
 	} else {
-		toReturn.rm = NewARMRegister(uint8(raw & 0xf))
+		toReturn.Rm = NewARMRegister(uint8(raw & 0xf))
 	}
-	toReturn.halfword = (raw & 0x20) != 0
-	toReturn.signed = (raw & 0x40) != 0
-	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.load = (raw & 0x100000) != 0
-	toReturn.writeBack = (raw & 0x200000) != 0
-	toReturn.up = (raw & 0x800000) != 0
-	toReturn.preindex = (raw & 0x1000000) != 0
+	toReturn.Halfword = (raw & 0x20) != 0
+	toReturn.Signed = (raw & 0x40) != 0
+	toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.Load = (raw & 0x100000) != 0
+	toReturn.WriteBack = (raw & 0x200000) != 0
+	toReturn.Up = (raw & 0x800000) != 0
+	toReturn.Preindex = (raw & 0x1000000) != 0
 	return &toReturn, nil
 }
 
@@ -680,7 +682,7 @@ func parseBranchExchangeInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn BranchExchangeInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.rn = NewARMRegister(uint8(raw & 0xf))
+	toReturn.Rn = NewARMRegister(uint8(raw & 0xf))
 	return &toReturn, nil
 }
 
@@ -688,10 +690,10 @@ func parseSingleDataSwapInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn SingleDataSwapInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.rm = NewARMRegister(uint8(raw & 0xf))
-	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.byteQuantity = (raw & 0x400000) != 0
+	toReturn.Rm = NewARMRegister(uint8(raw & 0xf))
+	toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.ByteQuantity = (raw & 0x400000) != 0
 	return &toReturn, nil
 }
 
@@ -699,7 +701,7 @@ func parseMultiplyInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn MultiplyInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.isLongMultiply = (raw & 0x800000) != 0
+	toReturn.IsLongMultiply = (raw & 0x800000) != 0
 	rm := uint8(raw & 0xf)
 	rs := uint8((raw >> 8) & 0xf)
 	rn := uint8((raw >> 12) & 0xf)
@@ -710,13 +712,13 @@ func parseMultiplyInstruction(raw uint32) (ARMInstruction, error) {
 	if (rd == rm) || (rd == rs) {
 		return nil, fmt.Errorf("Multiply destination and operand must differ.")
 	}
-	toReturn.rm = NewARMRegister(rm)
-	toReturn.rs = NewARMRegister(rs)
-	toReturn.rn = NewARMRegister(rn)
-	toReturn.rd = NewARMRegister(rd)
-	toReturn.setConditions = (raw & 0x100000) != 0
-	toReturn.accumulate = (raw & 0x200000) != 0
-	if toReturn.isLongMultiply || toReturn.accumulate {
+	toReturn.Rm = NewARMRegister(rm)
+	toReturn.Rs = NewARMRegister(rs)
+	toReturn.Rn = NewARMRegister(rn)
+	toReturn.Rd = NewARMRegister(rd)
+	toReturn.SetConditions = (raw & 0x100000) != 0
+	toReturn.Accumulate = (raw & 0x200000) != 0
+	if toReturn.IsLongMultiply || toReturn.Accumulate {
 		if rn == 15 {
 			return nil, fmt.Errorf("Multiply can't use r15")
 		}
@@ -724,13 +726,13 @@ func parseMultiplyInstruction(raw uint32) (ARMInstruction, error) {
 			return nil, fmt.Errorf("Multiply rd and rn must differ.")
 		}
 	}
-	if toReturn.isLongMultiply {
+	if toReturn.IsLongMultiply {
 		if rn == rm {
 			return nil, fmt.Errorf("Invalid mull register combination.")
 		}
-		toReturn.signed = (raw & 0x400000) != 0
-		toReturn.rdLow = toReturn.rn
-		toReturn.rdHigh = toReturn.rd
+		toReturn.Signed = (raw & 0x400000) != 0
+		toReturn.RdLow = toReturn.Rn
+		toReturn.RdHigh = toReturn.Rd
 	}
 	return &toReturn, nil
 }
@@ -739,20 +741,20 @@ func parsePSRTransferInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn PSRTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
-	toReturn.useCPSR = (raw & 0x400000) == 0
-	toReturn.writePSR = (raw & 0x200000) != 0
-	if toReturn.writePSR {
-		toReturn.rm = NewARMRegister(uint8(raw & 0xf))
-		toReturn.flagsOnly = (raw & 0x10000) == 0
-		if toReturn.flagsOnly {
-			toReturn.isImmediate = (raw & 0x2000000) != 0
-			if toReturn.isImmediate {
-				toReturn.immediate = uint8(raw & 0xff)
-				toReturn.rotate = uint8((raw >> 8) & 0xf)
+	toReturn.UseCPSR = (raw & 0x400000) == 0
+	toReturn.WritePSR = (raw & 0x200000) != 0
+	if toReturn.WritePSR {
+		toReturn.Rm = NewARMRegister(uint8(raw & 0xf))
+		toReturn.FlagsOnly = (raw & 0x10000) == 0
+		if toReturn.FlagsOnly {
+			toReturn.IsImmediate = (raw & 0x2000000) != 0
+			if toReturn.IsImmediate {
+				toReturn.Immediate = uint8(raw & 0xff)
+				toReturn.Rotate = uint8((raw >> 8) & 0xf)
 			}
 		}
 	} else {
-		toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+		toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
 	}
 	return &toReturn, nil
 }
@@ -760,24 +762,24 @@ func parsePSRTransferInstruction(raw uint32) (ARMInstruction, error) {
 func parseDataProcessingInstruction(raw uint32) (ARMInstruction, error) {
 	var toReturn DataProcessingInstruction
 	toReturn.raw = raw
-	toReturn.setConditions = (raw & 0x100000) != 0
-	if !toReturn.setConditions {
+	toReturn.SetConditions = (raw & 0x100000) != 0
+	if !toReturn.SetConditions {
 		if (raw & psrTransferMask) == psrTransferSet {
 			return parsePSRTransferInstruction(raw)
 		}
 	}
 	toReturn.condition = getCondition(raw)
-	toReturn.isImmediate = (raw & 0x2000000) != 0
-	if toReturn.isImmediate {
-		toReturn.immediate = uint8(raw & 0xff)
-		toReturn.rotate = uint8((raw >> 8) & 0xf)
+	toReturn.IsImmediate = (raw & 0x2000000) != 0
+	if toReturn.IsImmediate {
+		toReturn.Immediate = uint8(raw & 0xff)
+		toReturn.Rotate = uint8((raw >> 8) & 0xf)
 	} else {
-		toReturn.rm = NewARMRegister(uint8(raw & 0xf))
-		toReturn.shift = NewARMShift(uint8((raw >> 4) & 0xff))
+		toReturn.Rm = NewARMRegister(uint8(raw & 0xf))
+		toReturn.Shift = NewARMShift(uint8((raw >> 4) & 0xff))
 	}
-	toReturn.rd = NewARMRegister(uint8((raw >> 12) & 0xf))
-	toReturn.rn = NewARMRegister(uint8((raw >> 16) & 0xf))
-	toReturn.opcode = NewARMDataProcessingOpcode(uint8((raw >> 21) & 0xf))
+	toReturn.Rd = NewARMRegister(uint8((raw >> 12) & 0xf))
+	toReturn.Rn = NewARMRegister(uint8((raw >> 16) & 0xf))
+	toReturn.Opcode = NewARMDataProcessingOpcode(uint8((raw >> 21) & 0xf))
 	return &toReturn, nil
 }
 

@@ -34,9 +34,11 @@ type ARMProcessor interface {
 	// These operations always use the user-mode register bank.
 	GetUserRegisterNumber(number uint8) (uint32, error)
 	SetUserRegisterNumber(number uint8, value uint32) error
+	// This returns the interface through which memory associated with this
+	// processor may be modified.
 	GetMemoryInterface() ARMMemory
-	ReadWordAtRegister(register uint8, offset int32) (uint32, error)
-	ReadHalfwordAtRegister(register uint8, offset int32) (uint16, error)
+	// The following functions may be used to set and access the processor's
+	// state.
 	GetMode() uint8
 	SetMode(mode uint8) error
 	Negative() bool
@@ -51,13 +53,21 @@ type ARMProcessor interface {
 	IRQDisabled() bool
 	THUMBMode() bool
 	SetTHUMBMode(thumbMode bool) error
+	// These functions access the raw status register value. It is preferable,
+	// however, to use the preceding functions to modify specific bits.
 	GetCPSR() (uint32, error)
 	GetSPSR() (uint32, error)
 	SetCPSR(value uint32) error
 	SetSPSR(value uint32) error
+	// AddCoprocessor may be used to associate an object implementing the
+	// ARMCoprocessor interface with the processor. GetCoprocessors() is
+	// primarily needed during emulation.
 	AddCoprocessor(coprocessor ARMCoprocessor) error
 	GetCoprocessors() []ARMCoprocessor
+	// This prints the disassembly of instruction that will be executed on the
+	// next call to RunNextInstruction()
 	PendingInstructionString() string
+	// This emulates a single instruction.
 	RunNextInstruction() error
 }
 
@@ -341,34 +351,6 @@ func (p *basicARMProcessor) SetSPSR(value uint32) error {
 		return nil
 	}
 	return fmt.Errorf("Mode 0x%02x doesn't have a SPSR", mode)
-}
-
-func (p *basicARMProcessor) ReadWordAtRegister(register uint8,
-	offset int32) (uint32, error) {
-	address, e := p.GetRegisterNumber(register)
-	if e != nil {
-		return 0, e
-	}
-	if offset < 0 {
-		address -= uint32(-offset)
-	} else {
-		address += uint32(offset)
-	}
-	return p.GetMemoryInterface().ReadMemoryWord(address)
-}
-
-func (p *basicARMProcessor) ReadHalfwordAtRegister(register uint8,
-	offset int32) (uint16, error) {
-	address, e := p.GetRegisterNumber(register)
-	if e != nil {
-		return 0, e
-	}
-	if offset < 0 {
-		address -= uint32(-offset)
-	} else {
-		address += uint32(offset)
-	}
-	return p.GetMemoryInterface().ReadMemoryHalfword(address)
 }
 
 func (p *basicARMProcessor) AddCoprocessor(c ARMCoprocessor) error {
