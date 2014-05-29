@@ -5,7 +5,7 @@ ARM bytecode.
 A simple example of disassembling ARM and THUMB:
 
   arm_instruction, e := arm_emulate.ParseInstruction(0x00810002)
-  if e != nil {
+  if e == nil {
   	// Prints 'addeq r0, r1, r2'
   	fmt.Printf("%s\n", arm_instruction)
   } else {
@@ -13,7 +13,7 @@ A simple example of disassembling ARM and THUMB:
   }
 
   thumb_instruction, e := arm_emulate.ParseTHUMBInstruction(0x1888)
-  if e != nil {
+  if e == nil {
   	// Prints 'add r0, r1, r2'
   	fmt.Printf("%s\n", thumb_instruction)
   } else {
@@ -40,7 +40,7 @@ An example of emulating instructions:
   processor.SetRegisterNumber(1, 1234)
   var e error
   // This will emulate instructions in a loop until an error occurs.
-  for e != nil {
+  for e == nil {
   	e = processor.RunNextInstruction()
   }
   fmt.Printf("Emulation ended due to an error: %s\n")
