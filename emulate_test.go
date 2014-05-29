@@ -763,6 +763,8 @@ func TestCoprocessorEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
+	// Creates a test coprocessor, assigns it the number 8, and associates it
+	// with the processor.
 	e = p.AddCoprocessor(NewTestStorageCoprocessor(8))
 	if e != nil {
 		t.Logf("Couldn't add coprocessor: %s\n")
