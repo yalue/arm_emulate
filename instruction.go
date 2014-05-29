@@ -4,24 +4,6 @@ import (
 	"fmt"
 )
 
-const (
-	singleDataSwapMask       uint32 = 0x0fb00ff0
-	singleDataSwapSet        uint32 = 0x01000090
-	branchExchangeMask       uint32 = 0x0ffffff0
-	branchExchangeSet        uint32 = 0x012fff10
-	singleDataTransferMask   uint32 = 0x04000000
-	multiplyMask             uint32 = 0x0f0000f0
-	multiplySet              uint32 = 0x00000090
-	halfwordDataTransferMask uint32 = 0x0e000090
-	halfwordDataTransferSet  uint32 = 0x00000090
-	dataProcessingMask       uint32 = 0x0c000000
-	dataProcessingSet        uint32 = 0x00000000
-	psrTransferMask          uint32 = 0x0d980000
-	psrTransferSet           uint32 = 0x01080000
-	undefinedMask            uint32 = 0x0e000010
-	undefinedSet             uint32 = 0x06000010
-)
-
 // This is the main interface which all 32-bit ARM instructions support.
 type ARMInstruction interface {
 	fmt.Stringer
@@ -764,7 +746,7 @@ func parseDataProcessingInstruction(raw uint32) (ARMInstruction, error) {
 	toReturn.raw = raw
 	toReturn.SetConditions = (raw & 0x100000) != 0
 	if !toReturn.SetConditions {
-		if (raw & psrTransferMask) == psrTransferSet {
+		if (raw & 0x0d980000) == 0x01080000 {
 			return parsePSRTransferInstruction(raw)
 		}
 	}
