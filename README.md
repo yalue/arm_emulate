@@ -10,8 +10,9 @@ and THUMB instruction sets is complete.
 
 Usage
 -----
-First, download the code:
-    go get -v github.com/yalue/arm_emulate
+First, download the code: `go get -v github.com/yalue/arm_emulate`
+
+The arm\_emulate package includes both disassembly and emulation functions.
 
 A simple function to disassemble an ARM instruction:
 ```go
