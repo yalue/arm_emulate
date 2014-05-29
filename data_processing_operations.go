@@ -26,6 +26,8 @@ const (
 var opcodeStrings = [...]string{"and", "eor", "sub", "rsb", "add", "adc",
 	"sbc", "rsc", "tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn"}
 
+// This type is used for storing and evaluating the different opcodes used by
+// ARM data processing instructions.
 type ARMDataProcessingOpcode interface {
 	fmt.Stringer
 	Value() uint8
@@ -37,10 +39,6 @@ type ARMDataProcessingOpcode interface {
 
 type basicARMDataProcessingOpcode struct {
 	value uint8
-}
-
-func valuesCarry(a uint32, b uint32) bool {
-	return uint32(a+b) < a
 }
 
 // Returns the result of evaluating the opcode, where b is the second operand

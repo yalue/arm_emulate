@@ -4,9 +4,10 @@ import (
 	"fmt"
 )
 
-var registerStrings = [...]string{"r0", "r1", "r2", "r3", "r4", "r5", "r6",
-	"r7", "r8", "r9", "r10", "r11", "r12", "sp", "lr", "pc"}
-
+// This interface is used for registers contained in instruction types. While
+// raw numbers could also have been used, this interface is useful for
+// sanity-checking that register numbers are valid and for producing the string
+// mnemonic for the register during disassembly.
 type ARMRegister interface {
 	fmt.Stringer
 	Register() uint8
@@ -17,7 +18,11 @@ type basicARMRegister struct {
 }
 
 func (r *basicARMRegister) String() string {
-	return registerStrings[r.number&0xf]
+	if r.number < 13 {
+		return fmt.Sprintf("r%d", r.number)
+	}
+	registerStrings := [...]string{"sp", "lr", "pc"}
+	return registerStrings[r.number-13]
 }
 
 func (r *basicARMRegister) Register() uint8 {

@@ -7,6 +7,7 @@ import (
 var opcodeStringsTHUMB = [...]string{"and", "eor", "lsl", "lsr", "asr", "adc",
 	"sbc", "ror", "tst", "neg", "cmp", "cmn", "orr", "mul", "bic", "mvn"}
 
+// Similar to the ARMDataProcessingOpcode type, but for THUMB ALU instructions.
 type ALUOpcodeTHUMB interface {
 	fmt.Stringer
 	Value() uint8

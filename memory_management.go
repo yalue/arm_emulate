@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+// This defines the interface to memory to be used during emulation.
 type ARMMemory interface {
 	// Maps the given byte array into memory, starting at the given base
 	// address. baseAddress doesn't need to be aligned with anything.

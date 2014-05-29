@@ -6,6 +6,8 @@ import (
 
 var shiftStrings = [...]string{"lsl", "lsr", "asr", "ror"}
 
+// This interface is used when processing the shifts encoded in ARM data
+// processing instructions.
 type ARMShift interface {
 	fmt.Stringer
 	ShiftString() string
