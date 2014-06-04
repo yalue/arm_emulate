@@ -94,13 +94,12 @@ Coding and Naming Conventions
 -----------------------------
 Aside from following the Go guidelines and 80-character lines, a few
 conventions were used throughout this project. Instruction types were based on
-the formats given in the arm-instructionset.pdf and thumb-instructionset.pdf
-documents (included in the useful\_documents subdirectory in this repository).
-Numerical fields from instructions are always stored in the shortest possible
-type that can hold them (for example, an 11 bit integer is stored in a 16-bit
-type rather than 32-bit). Also, the instruction types always use unsigned
-values, without shifts or rotates applied--their sole purpose is to split the
-instruction into its fields, not to carry out evaluation.
+the formats given in the ARM7TDMI instruction set reference (for ARM and
+THUMB). Numerical fields from instructions are always stored in the shortest
+possible type that can hold them (for example, an 11 bit integer is stored in a
+16-bit type rather than 32-bit). Also, the instruction types always use\
+unsigned values, without shifts or rotates applied--their sole purpose is to
+split the instruction into its fields, not to carry out evaluation.
 
 Names for each instruction type is based on the name given to the format in
 the aforementioned documents. If the same name appears in both ARM and THUMB
