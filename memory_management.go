@@ -11,9 +11,9 @@ type ARMMemory interface {
 	SetMemoryRegion(baseAddress uint32, memory []byte) error
 	// "Unmaps" the given range. Size is rounded down to the nearest 4096 bytes
 	// and baseAddress is page-aligned. This can free unused memory.
-	ClearMemoryRegion(baseAddress uint32, size uint32) error
+	ClearMemoryRegion(baseAddress, size uint32) error
 	ReadMemoryWord(address uint32) (uint32, error)
-	WriteMemoryWord(address uint32, data uint32) error
+	WriteMemoryWord(address, data uint32) error
 	ReadMemoryHalfword(address uint32) (uint16, error)
 	WriteMemoryHalfword(address uint32, data uint16) error
 	ReadMemoryByte(address uint32) (uint8, error)
@@ -21,7 +21,7 @@ type ARMMemory interface {
 	// Endianness only matters when reading or writing words or halfwords.
 	// Values used in the interface (addresses and values) should always use
 	// the "native" endianness of the machine running the emulator.
-	SetBigEndian(bigEndian bool)
+	SetBigEndian(bigEndian bool) error
 	IsBigEndian() bool
 }
 
@@ -86,7 +86,7 @@ func (m *basicARMMemory) ReadMemoryWord(address uint32) (uint32, error) {
 	return toReturn, nil
 }
 
-func (m *basicARMMemory) WriteMemoryWord(address uint32, value uint32) error {
+func (m *basicARMMemory) WriteMemoryWord(address, value uint32) error {
 	address &= 0xfffffffc
 	page, e := m.getContainingPage(address)
 	if e != nil {
@@ -176,8 +176,7 @@ func (m *basicARMMemory) SetMemoryRegion(baseAddress uint32,
 	return nil
 }
 
-func (m *basicARMMemory) ClearMemoryRegion(baseAddress uint32,
-	size uint32) error {
+func (m *basicARMMemory) ClearMemoryRegion(baseAddress, size uint32) error {
 	address := baseAddress
 	if (address % 4096) != 0 {
 		address += 4096 - (address % 4096)
@@ -203,8 +202,9 @@ func (m *basicARMMemory) ClearMemoryRegion(baseAddress uint32,
 	return nil
 }
 
-func (m *basicARMMemory) SetBigEndian(isBigEndian bool) {
+func (m *basicARMMemory) SetBigEndian(isBigEndian bool) error {
 	m.isBigEndian = isBigEndian
+	return nil
 }
 
 func (m *basicARMMemory) IsBigEndian() bool {

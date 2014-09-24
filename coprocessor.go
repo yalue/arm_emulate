@@ -10,7 +10,7 @@ import (
 // corresponding ARM instruction is emulated.
 type ARMCoprocessor interface {
 	Operation(p ARMProcessor, raw uint32) error
-	DataTransfer(p ARMProcessor, raw uint32, address uint32) error
+	DataTransfer(p ARMProcessor, raw, address uint32) error
 	RegisterTransfer(p ARMProcessor, raw uint32, rd ARMRegister,
 		load bool) error
 	Number() uint8
@@ -35,7 +35,7 @@ func (c *simpleCounterCoprocessor) Operation(p ARMProcessor, raw uint32) error {
 	return nil
 }
 
-func (c *simpleCounterCoprocessor) DataTransfer(p ARMProcessor, raw uint32,
+func (c *simpleCounterCoprocessor) DataTransfer(p ARMProcessor, raw,
 	address uint32) error {
 	if uint8((raw>>8)&0xf) != c.coprocNumber {
 		return nil

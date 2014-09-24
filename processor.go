@@ -37,6 +37,7 @@ type ARMProcessor interface {
 	// This returns the interface through which memory associated with this
 	// processor may be modified.
 	GetMemoryInterface() ARMMemory
+	SetMemoryInterface(m ARMMemory)
 	// The following functions may be used to set and access the processor's
 	// state.
 	GetMode() uint8
@@ -67,6 +68,10 @@ type ARMProcessor interface {
 	// This prints the disassembly of instruction that will be executed on the
 	// next call to RunNextInstruction()
 	PendingInstructionString() string
+	// These functions, respectively, cause the processor to switch to the
+	// proper mode and jump to the respective exception handler.
+	SendIRQ() error
+	SendFIQ() error
 	// This emulates a single instruction.
 	RunNextInstruction() error
 }
@@ -93,20 +98,19 @@ func (p *basicARMProcessor) GetMode() uint8 {
 }
 
 func (p *basicARMProcessor) SetMode(mode uint8) error {
-	switchingToUser := false
+	setSPSR := true
 	switch mode {
-	case userMode:
-		switchingToUser = true
+	case userMode, systemMode:
+		setSPSR = false
 		break
-	case fiqMode, irqMode, supervisorMode, abortMode, undefinedMode,
-		systemMode:
+	case fiqMode, irqMode, supervisorMode, abortMode, undefinedMode:
 		break
 	default:
 		return fmt.Errorf("Invalid mode provided: 0x%02x.", mode)
 	}
 	oldStatus := p.currentStatusRegister
 	p.currentStatusRegister = (oldStatus & 0xffffffe0) | uint32(mode)
-	if !switchingToUser {
+	if setSPSR {
 		e := p.SetSPSR(oldStatus)
 		if e != nil {
 			return fmt.Errorf("Failed writing SPSR in new mode: %s", e)
@@ -289,6 +293,10 @@ func (p *basicARMProcessor) GetMemoryInterface() ARMMemory {
 	return p.memory
 }
 
+func (p *basicARMProcessor) SetMemoryInterface(m ARMMemory) {
+	p.memory = m
+}
+
 func (p *basicARMProcessor) GetCPSR() (uint32, error) {
 	return p.currentStatusRegister, nil
 }
@@ -360,6 +368,61 @@ func (p *basicARMProcessor) AddCoprocessor(c ARMCoprocessor) error {
 
 func (p *basicARMProcessor) GetCoprocessors() []ARMCoprocessor {
 	return p.coprocessors
+}
+
+// Since ARM programs expect to return from IRQs and FIQs to lr - 4, we need
+// to account for this here by adding 4 to the return address, because we
+// deliver IRQs before emulating an instruction here. This checks the IRQ
+// disable bit in the CPSR first.
+func (p *basicARMProcessor) SendIRQ() error {
+	status, e := p.GetCPSR()
+	if e != nil {
+		return fmt.Errorf("Couldn't send IRQ: %s", e)
+	}
+	// Check the IRQ disable bit
+	if (status & (1 << 7)) != 0 {
+		return nil
+	}
+	returnAddress, e := p.GetRegisterNumber(15)
+	if e != nil {
+		return e
+	}
+	returnAddress += 4
+	e = p.SetMode(irqMode)
+	if e != nil {
+		return e
+	}
+	e = p.SetRegisterNumber(14, returnAddress)
+	if e != nil {
+		return e
+	}
+	e = p.SetRegisterNumber(15, 0x18)
+	return e
+}
+
+func (p *basicARMProcessor) SendFIQ() error {
+	status, e := p.GetCPSR()
+	if e != nil {
+		return fmt.Errorf("Couldn't send FIQ: %s", e)
+	}
+	if (status & (1 << 6)) != 0 {
+		return nil
+	}
+	returnAddress, e := p.GetRegisterNumber(15)
+	if e != nil {
+		return e
+	}
+	returnAddress += 4
+	e = p.SetMode(fiqMode)
+	if e != nil {
+		return e
+	}
+	e = p.SetRegisterNumber(14, returnAddress)
+	if e != nil {
+		return e
+	}
+	e = p.SetRegisterNumber(15, 0x1c)
+	return e
 }
 
 func (p *basicARMProcessor) PendingInstructionString() string {
