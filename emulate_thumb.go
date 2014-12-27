@@ -122,11 +122,11 @@ func (n *ALUOperationInstruction) Emulate(p ARMProcessor) error {
 
 func (n *HighRegisterOperationInstruction) Emulate(p ARMProcessor) error {
 	a, _ := p.GetRegister(n.Rd)
-	if n.Rd.Register() == 15 {
+	if n.Rd == 15 {
 		a += 2
 	}
 	b, _ := p.GetRegister(n.Rs)
-	if n.Rs.Register() == 15 {
+	if n.Rs == 15 {
 		b += 2
 	}
 	switch n.Operation {
@@ -149,13 +149,13 @@ func (n *HighRegisterOperationInstruction) Emulate(p ARMProcessor) error {
 				return e
 			}
 		}
-		p.SetRegisterNumber(15, b)
+		p.SetRegister(15, b)
 	}
 	return nil
 }
 
 func (n *PcRelativeLoadInstruction) Emulate(p ARMProcessor) error {
-	base, _ := p.GetRegisterNumber(15)
+	base, _ := p.GetRegister(15)
 	base += 2
 	base &= 0xfffffffc
 	base += uint32(n.Offset) << 2
@@ -285,7 +285,7 @@ func (n *LoadStoreHalfwordInstruction) Emulate(p ARMProcessor) error {
 }
 
 func (n *SPRelativeLoadStoreInstruction) Emulate(p ARMProcessor) error {
-	address, _ := p.GetRegisterNumber(13)
+	address, _ := p.GetRegister(13)
 	address += uint32(n.Offset) << 2
 	m := p.GetMemoryInterface()
 	if n.Load {
@@ -302,9 +302,9 @@ func (n *SPRelativeLoadStoreInstruction) Emulate(p ARMProcessor) error {
 func (n *LoadAddressInstruction) Emulate(p ARMProcessor) error {
 	var value uint32
 	if n.LoadSP {
-		value, _ = p.GetRegisterNumber(13)
+		value, _ = p.GetRegister(13)
 	} else {
-		value, _ = p.GetRegisterNumber(15)
+		value, _ = p.GetRegister(15)
 		value += 2
 		value &= 0xfffffffc
 	}
@@ -313,23 +313,23 @@ func (n *LoadAddressInstruction) Emulate(p ARMProcessor) error {
 }
 
 func (n *AddToStackPointerInstruction) Emulate(p ARMProcessor) error {
-	start, _ := p.GetRegisterNumber(13)
+	start, _ := p.GetRegister(13)
 	offset := uint32(n.Offset) << 2
 	if n.Negative {
 		start -= offset
 	} else {
 		start += offset
 	}
-	return p.SetRegisterNumber(13, start)
+	return p.SetRegister(13, start)
 }
 
 func (n *PushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
-	baseAddress, _ := p.GetRegisterNumber(13)
+	baseAddress, _ := p.GetRegister(13)
 	bits := n.RegisterList
 	toStore := make([]uint32, 0, 9)
 	for i := 0; (i < 8) && (bits != 0); i++ {
 		if (bits & 1) == 1 {
-			registerContents, e := p.GetRegisterNumber(uint8(i))
+			registerContents, e := p.GetRegister(ARMRegister(i))
 			if e != nil {
 				return e
 			}
@@ -338,7 +338,7 @@ func (n *PushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
 		bits = bits >> 1
 	}
 	if n.StoreLRLoadPC {
-		lrContents, e := p.GetRegisterNumber(14)
+		lrContents, e := p.GetRegister(14)
 		if e != nil {
 			return e
 		}
@@ -356,12 +356,12 @@ func (n *PushPopRegistersInstruction) pushRegisters(p ARMProcessor) error {
 			return e
 		}
 	}
-	p.SetRegisterNumber(13, baseAddress)
+	p.SetRegister(13, baseAddress)
 	return nil
 }
 
 func (n *PushPopRegistersInstruction) popRegisters(p ARMProcessor) error {
-	baseAddress, _ := p.GetRegisterNumber(13)
+	baseAddress, _ := p.GetRegister(13)
 	bits := n.RegisterList
 	toLoad := make([]uint8, 0, 9)
 	for i := 0; (i < 8) && (bits != 0); i++ {
@@ -379,7 +379,7 @@ func (n *PushPopRegistersInstruction) popRegisters(p ARMProcessor) error {
 		if e != nil {
 			return e
 		}
-		e = p.SetRegisterNumber(registerNumber, value)
+		e = p.SetRegister(ARMRegister(registerNumber), value)
 		if e != nil {
 			return e
 		}
@@ -402,7 +402,7 @@ func (n *MultipleLoadStoreInstruction) multipleStoreTHUMB(
 	toStore := make([]uint32, 0, 8)
 	for i := 0; (i < 8) && (bits != 0); i++ {
 		if (bits & 1) == 1 {
-			registerContents, e := p.GetRegisterNumber(uint8(i))
+			registerContents, e := p.GetRegister(ARMRegister(i))
 			if e != nil {
 				return e
 			}
@@ -438,7 +438,7 @@ func (n *MultipleLoadStoreInstruction) multipleLoadTHUMB(
 		if e != nil {
 			return e
 		}
-		e = p.SetRegisterNumber(registerNumber, value)
+		e = p.SetRegister(ARMRegister(registerNumber), value)
 		if e != nil {
 			return e
 		}
@@ -459,42 +459,42 @@ func (n *ConditionalBranchInstruction) Emulate(p ARMProcessor) error {
 		return nil
 	}
 	offset := (int32(n.Offset) << 24) >> 23
-	address, _ := p.GetRegisterNumber(15)
+	address, _ := p.GetRegister(15)
 	address += 2
 	address = uint32(int32(address) + offset)
-	return p.SetRegisterNumber(15, address)
+	return p.SetRegister(15, address)
 }
 
 func (n *SoftwareInterruptTHUMBInstruction) Emulate(p ARMProcessor) error {
-	currentPC, _ := p.GetRegisterNumber(15)
+	currentPC, _ := p.GetRegister(15)
 	e := p.SetMode(0x13)
 	if e != nil {
 		return e
 	}
-	p.SetRegisterNumber(14, currentPC)
-	p.SetRegisterNumber(15, 0x8)
+	p.SetRegister(14, currentPC)
+	p.SetRegister(15, 0x8)
 	return p.SetTHUMBMode(false)
 }
 
 func (n *UnconditionalBranchInstruction) Emulate(p ARMProcessor) error {
 	offset := (int32(n.Offset) << 21) >> 20
-	current, _ := p.GetRegisterNumber(15)
+	current, _ := p.GetRegister(15)
 	current += 2
 	target := uint32(int32(current) + offset)
-	return p.SetRegisterNumber(15, target)
+	return p.SetRegister(15, target)
 }
 
 func (n *LongBranchAndLinkInstruction) Emulate(p ARMProcessor) error {
-	currentPC, _ := p.GetRegisterNumber(15)
+	currentPC, _ := p.GetRegister(15)
 	if n.OffsetLow {
-		currentLR, _ := p.GetRegisterNumber(14)
+		currentLR, _ := p.GetRegister(14)
 		currentLR += uint32(n.Offset) << 1
-		p.SetRegisterNumber(14, currentPC|1)
-		p.SetRegisterNumber(15, currentLR)
+		p.SetRegister(14, currentPC|1)
+		p.SetRegister(15, currentLR)
 		return nil
 	}
 	currentPC += 2
 	currentPC += uint32((int32(n.Offset) << 21) >> 9)
-	p.SetRegisterNumber(14, currentPC)
+	p.SetRegister(14, currentPC)
 	return nil
 }

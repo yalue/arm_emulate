@@ -23,17 +23,11 @@ func isValidMode(mode uint8) bool {
 // The generic processor interface through which emulation functions should be
 // implemented.
 type ARMProcessor interface {
-	// The functions for getting and setting registers take either a plain
-	// register number (0-15) or an ARMRegister object. For now, the error
-	// value can usually be ignored, but if this leads to problems, it should
-	// be changed everywhere.
 	GetRegister(register ARMRegister) (uint32, error)
-	GetRegisterNumber(number uint8) (uint32, error)
 	SetRegister(register ARMRegister, value uint32) error
-	SetRegisterNumber(number uint8, value uint32) error
 	// These operations always use the user-mode register bank.
-	GetUserRegisterNumber(number uint8) (uint32, error)
-	SetUserRegisterNumber(number uint8, value uint32) error
+	GetUserRegister(number ARMRegister) (uint32, error)
+	SetUserRegister(number ARMRegister, value uint32) error
 	// This returns the interface through which memory associated with this
 	// processor may be modified.
 	GetMemoryInterface() ARMMemory
@@ -188,11 +182,7 @@ func (p *basicARMProcessor) IRQDisabled() bool {
 	return (p.currentStatusRegister & 0x00000080) != 0
 }
 
-func (p *basicARMProcessor) GetRegister(register ARMRegister) (uint32, error) {
-	return p.GetRegisterNumber(register.Register())
-}
-
-func (p *basicARMProcessor) GetRegisterNumber(number uint8) (uint32, error) {
+func (p *basicARMProcessor) GetRegister(number ARMRegister) (uint32, error) {
 	if number > 15 {
 		return 0, fmt.Errorf("Error! Trying to read register %d?", number)
 	}
@@ -227,12 +217,7 @@ func (p *basicARMProcessor) GetRegisterNumber(number uint8) (uint32, error) {
 	return 0, fmt.Errorf("Error getting register %d value", number)
 }
 
-func (p *basicARMProcessor) SetRegister(register ARMRegister,
-	value uint32) error {
-	return p.SetRegisterNumber(register.Register(), value)
-}
-
-func (p *basicARMProcessor) SetRegisterNumber(number uint8,
+func (p *basicARMProcessor) SetRegister(number ARMRegister,
 	value uint32) error {
 	if number > 15 {
 		return fmt.Errorf("Error! Trying to write register %d?", number)
@@ -272,7 +257,7 @@ func (p *basicARMProcessor) SetRegisterNumber(number uint8,
 	return nil
 }
 
-func (p *basicARMProcessor) GetUserRegisterNumber(number uint8) (uint32,
+func (p *basicARMProcessor) GetUserRegister(number ARMRegister) (uint32,
 	error) {
 	if number > 15 {
 		return 0, fmt.Errorf("Can't get user-bank r%d", number)
@@ -280,7 +265,7 @@ func (p *basicARMProcessor) GetUserRegisterNumber(number uint8) (uint32,
 	return p.currentRegisters[number], nil
 }
 
-func (p *basicARMProcessor) SetUserRegisterNumber(number uint8,
+func (p *basicARMProcessor) SetUserRegister(number ARMRegister,
 	value uint32) error {
 	if number > 15 {
 		return fmt.Errorf("Can't set user-bank r%d", number)
@@ -383,7 +368,7 @@ func (p *basicARMProcessor) SendIRQ() error {
 	if (status & (1 << 7)) != 0 {
 		return nil
 	}
-	returnAddress, e := p.GetRegisterNumber(15)
+	returnAddress, e := p.GetRegister(15)
 	if e != nil {
 		return e
 	}
@@ -392,11 +377,11 @@ func (p *basicARMProcessor) SendIRQ() error {
 	if e != nil {
 		return e
 	}
-	e = p.SetRegisterNumber(14, returnAddress)
+	e = p.SetRegister(14, returnAddress)
 	if e != nil {
 		return e
 	}
-	e = p.SetRegisterNumber(15, 0x18)
+	e = p.SetRegister(15, 0x18)
 	return e
 }
 
@@ -408,7 +393,7 @@ func (p *basicARMProcessor) SendFIQ() error {
 	if (status & (1 << 6)) != 0 {
 		return nil
 	}
-	returnAddress, e := p.GetRegisterNumber(15)
+	returnAddress, e := p.GetRegister(15)
 	if e != nil {
 		return e
 	}
@@ -417,16 +402,16 @@ func (p *basicARMProcessor) SendFIQ() error {
 	if e != nil {
 		return e
 	}
-	e = p.SetRegisterNumber(14, returnAddress)
+	e = p.SetRegister(14, returnAddress)
 	if e != nil {
 		return e
 	}
-	e = p.SetRegisterNumber(15, 0x1c)
+	e = p.SetRegister(15, 0x1c)
 	return e
 }
 
 func (p *basicARMProcessor) PendingInstructionString() string {
-	pc, e := p.GetRegisterNumber(15)
+	pc, e := p.GetRegister(15)
 	if e != nil {
 		return fmt.Sprintf("Error fetching address: %s", e)
 	}
@@ -446,6 +431,7 @@ func (p *basicARMProcessor) PendingInstructionString() string {
 		return fmt.Sprintf("%08x: Error: %s", pc, e)
 	}
 	instruction, e := ParseInstruction(raw)
+	instruction.ReCache()
 	if e != nil {
 		return fmt.Sprintf("%08x: %08x Error: %s", pc, raw, e)
 	}
@@ -456,7 +442,7 @@ func (p *basicARMProcessor) PendingInstructionString() string {
 // instruction. Therefore, pc will contain the address of the instruction + 4
 // during emulation of any instruction using this implementation.
 func (p *basicARMProcessor) RunNextInstruction() error {
-	pc, e := p.GetRegisterNumber(15)
+	pc, e := p.GetRegister(15)
 	if e != nil {
 		return fmt.Errorf("Failed getting PC: %s", e)
 	}
@@ -465,7 +451,7 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 		if e != nil {
 			return fmt.Errorf("Failed fetching instruction: %s", e)
 		}
-		e = p.SetRegisterNumber(15, pc+2)
+		e = p.SetRegister(15, pc+2)
 		if e != nil {
 			return fmt.Errorf("Failed incrementing PC: %s", e)
 		}
@@ -483,7 +469,7 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 	if e != nil {
 		return fmt.Errorf("Failed decoding 0x%08x: %s", raw, e)
 	}
-	e = p.SetRegisterNumber(15, pc+4)
+	e = p.SetRegister(15, pc+4)
 	if e != nil {
 		return fmt.Errorf("Failed incrementing PC: %s", e)
 	}
@@ -491,6 +477,7 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 	if e != nil {
 		return fmt.Errorf("Failed emulating instruction: %s", e)
 	}
+	instruction.ReCache()
 	return nil
 }
 

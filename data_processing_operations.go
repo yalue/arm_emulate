@@ -1,11 +1,7 @@
 package arm_emulate
 
-import (
-	"fmt"
-)
-
 const (
-	andARMOpcode uint8 = iota
+	andARMOpcode ARMDataProcessingOpcode = iota
 	eorARMOpcode
 	subARMOpcode
 	rsbARMOpcode
@@ -26,25 +22,12 @@ const (
 var opcodeStrings = [...]string{"and", "eor", "sub", "rsb", "add", "adc",
 	"sbc", "rsc", "tst", "teq", "cmp", "cmn", "orr", "mov", "bic", "mvn"}
 
-// This type is used for storing and evaluating the different opcodes used by
-// ARM data processing instructions.
-type ARMDataProcessingOpcode interface {
-	fmt.Stringer
-	Value() uint8
-	// This evaluates the operation and sets the processor condition flags.
-	// The returned boolean will be false if the returned result shouldn't be
-	// stored.
-	Evaluate(a, b uint32, p ARMProcessor) (uint32, bool, error)
-}
-
-type basicARMDataProcessingOpcode struct {
-	value uint8
-}
+type ARMDataProcessingOpcode uint8
 
 // Returns the result of evaluating the opcode, where b is the second operand
 // and a is the first. Also returns whether the result should be stored. If the
 // operation is arithmetic, this will also set the carry and overflow flags.
-func evaluateOperation(a uint32, b uint32, opcode uint8,
+func evaluateOperation(a uint32, b uint32, opcode ARMDataProcessingOpcode,
 	p ARMProcessor) (uint32, bool) {
 	if (opcode & 8) != 0 {
 		if (opcode & 4) != 0 {
@@ -130,25 +113,18 @@ func evaluateOperation(a uint32, b uint32, opcode uint8,
 	return a & b, true
 }
 
-func (o *basicARMDataProcessingOpcode) Evaluate(a, b uint32,
+// This evaluates the operation and sets the processor condition flags.
+// The returned boolean will be false if the returned result shouldn't be
+// stored.
+func (o ARMDataProcessingOpcode) Evaluate(a, b uint32,
 	p ARMProcessor) (uint32, bool, error) {
 	signMask := uint32(0x80000000)
-	result, storeResult := evaluateOperation(a, b, o.value, p)
+	result, storeResult := evaluateOperation(a, b, o, p)
 	p.SetZero(result == 0)
 	p.SetNegative((result & signMask) != 0)
 	return result, storeResult, nil
 }
 
-func (o *basicARMDataProcessingOpcode) String() string {
-	return opcodeStrings[o.value&0xf]
-}
-
-func (o *basicARMDataProcessingOpcode) Value() uint8 {
-	return o.value
-}
-
-func NewARMDataProcessingOpcode(value uint8) ARMDataProcessingOpcode {
-	var toReturn basicARMDataProcessingOpcode
-	toReturn.value = value & 0xf
-	return &toReturn
+func (o ARMDataProcessingOpcode) String() string {
+	return opcodeStrings[o&0xf]
 }

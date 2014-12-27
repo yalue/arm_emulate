@@ -131,7 +131,7 @@ func applyROR(value uint32, amount uint8, registerSpecified bool,
 func (s *basicARMShift) Apply(value uint32, p ARMProcessor) (uint32, error) {
 	var amount uint8
 	if s.useRegister {
-		if s.register.Register() == 15 {
+		if s.register == 15 {
 			return value, fmt.Errorf("Can't use r15 in a shift.")
 		}
 		registerAmount, e := p.GetRegister(s.register)
@@ -176,7 +176,7 @@ func NewARMShift(shift uint8) ARMShift {
 	toReturn.useRegister = (shift & 1) == 1
 	toReturn.shiftType = (shift >> 1) & 3
 	if toReturn.useRegister {
-		toReturn.register = NewARMRegister((shift >> 4) & 0xf)
+		toReturn.register = ARMRegister((shift >> 4) & 0xf)
 	} else {
 		toReturn.amount = (shift >> 3) & 0x1f
 	}

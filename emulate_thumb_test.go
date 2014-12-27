@@ -24,7 +24,7 @@ func testSingleTHUMBInstruction(raw uint16, p ARMProcessor) error {
 	if e != nil {
 		return e
 	}
-	e = p.SetRegisterNumber(15, 4096)
+	e = p.SetRegister(15, 4096)
 	if e != nil {
 		return e
 	}
@@ -49,8 +49,8 @@ func TestMoveShiftedRegisterEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 1337)
-	p.SetRegisterNumber(1, 0)
+	p.SetRegister(0, 1337)
+	p.SetRegister(1, 0)
 	p.SetCarry(true)
 	p.SetNegative(true)
 	p.SetZero(true)
@@ -60,7 +60,7 @@ func TestMoveShiftedRegisterEmulation(t *testing.T) {
 		t.Logf("Failed running lsl instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(1)
+	value, _ := p.GetRegister(1)
 	if value != (1337 << 1) {
 		t.Logf("lsl instruction produced incorrect result: %d\n", value)
 		t.Fail()
@@ -72,14 +72,14 @@ func TestMoveShiftedRegisterEmulation(t *testing.T) {
 	p.SetNegative(false)
 	p.SetCarry(false)
 	p.SetZero(true)
-	p.SetRegisterNumber(0, 0x80000000)
+	p.SetRegister(0, 0x80000000)
 	// asr r0, r0, 32 (32 is encoded as 0)
 	e = testSingleTHUMBInstruction(0x1000, p)
 	if e != nil {
 		t.Logf("Failed running asr instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0xffffffff {
 		t.Logf("asr instruction produced incorrect result: %08x\n", value)
 		t.Fail()
@@ -94,7 +94,7 @@ func TestMoveShiftedRegisterEmulation(t *testing.T) {
 		t.Logf("Failed running lsr instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 1 {
 		t.Logf("lsr produced a vaue of %d instead of 1.\n", value)
 		t.Fail()
@@ -105,7 +105,7 @@ func TestMoveShiftedRegisterEmulation(t *testing.T) {
 		t.Logf("Failed running 2nd asr instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0 {
 		t.Logf("asr instruction set r0 to %d instead of 0.\n", value)
 		t.Fail()
@@ -121,8 +121,8 @@ func TestAddSubtractEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 2)
-	p.SetRegisterNumber(1, 0xfffffffe)
+	p.SetRegister(0, 2)
+	p.SetRegister(1, 0xfffffffe)
 	p.SetCarry(false)
 	p.SetOverflow(true)
 	p.SetZero(false)
@@ -133,7 +133,7 @@ func TestAddSubtractEmulation(t *testing.T) {
 		t.Logf("Failed to run add instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 0 {
 		t.Logf("Add produced incorrect value: %d (expected 0).\n", value)
 		t.Fail()
@@ -160,7 +160,7 @@ func TestAddSubtractEmulation(t *testing.T) {
 		t.Logf("Failed to run sub instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if int32(value) != -7 {
 		t.Logf("Sub instruction got %d instead of -7.\n", int(value))
 		t.Fail()
@@ -193,12 +193,12 @@ func TestMoveCompareAddSubtractImmediateEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(15, 4096)
+	p.SetRegister(15, 4096)
 	e = runMultipleInstructions(4, p, t)
 	if e != nil {
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 250 {
 		t.Logf("Got incorrect value in r0: %d. Expected 250.\n", value)
 		t.Fail()
@@ -208,7 +208,7 @@ func TestMoveCompareAddSubtractImmediateEmulation(t *testing.T) {
 		t.Fail()
 	}
 	p.SetOverflow(false)
-	p.SetRegisterNumber(0, 0x80000000)
+	p.SetRegister(0, 0x80000000)
 	// sub r0, 1
 	e = testSingleTHUMBInstruction(0x3801, p)
 	if e != nil {
@@ -219,7 +219,7 @@ func TestMoveCompareAddSubtractImmediateEmulation(t *testing.T) {
 		t.Logf("Sub instruction failed to set overflow.\n")
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0x7fffffff {
 		t.Logf("Sub produced 0x%08x instead of 0x7fffffff\n", value)
 		t.Fail()
@@ -242,16 +242,16 @@ func TestALUOperationEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(15, 4096)
-	p.SetRegisterNumber(0, 0)
-	p.SetRegisterNumber(1, 1337)
+	p.SetRegister(15, 4096)
+	p.SetRegister(0, 0)
+	p.SetRegister(1, 1337)
 	runMultipleInstructions(3, p, t)
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 1337 {
 		t.Logf("Expected 1337 in r0, got %d\n", value)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(1)
+	value, _ = p.GetRegister(1)
 	if value != 0 {
 		t.Logf("Expected 0 in r1, got %d\n", value)
 		t.Fail()
@@ -259,15 +259,15 @@ func TestALUOperationEmulation(t *testing.T) {
 	p.SetNegative(false)
 	p.SetCarry(true)
 	p.SetZero(true)
-	p.SetRegisterNumber(0, 0x7fffffff)
-	p.SetRegisterNumber(1, 0)
+	p.SetRegister(0, 0x7fffffff)
+	p.SetRegister(1, 0)
 	// adc r0, r1
 	e = testSingleTHUMBInstruction(0x4148, p)
 	if e != nil {
 		t.Logf("Adc instruction failed: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0x80000000 {
 		t.Logf("Expected 0x80000000 in r0, got 0x%08x\n", value)
 		t.Fail()
@@ -291,11 +291,11 @@ func TestHighRegisterOperationEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 1337)
-	p.SetRegisterNumber(8, 0)
-	p.SetRegisterNumber(9, 0)
-	p.SetRegisterNumber(13, 1)
-	p.SetRegisterNumber(1, 0xffffffff)
+	p.SetRegister(0, 1337)
+	p.SetRegister(8, 0)
+	p.SetRegister(9, 0)
+	p.SetRegister(13, 1)
+	p.SetRegister(1, 0xffffffff)
 	p.SetZero(true)
 	p.SetCarry(false)
 	p.SetOverflow(true)
@@ -306,7 +306,7 @@ func TestHighRegisterOperationEmulation(t *testing.T) {
 		t.Logf("Failed running add (high register): %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(8)
+	value, _ := p.GetRegister(8)
 	if value != 1337 {
 		t.Logf("Expected 1337 in r8. Got %d\n", value)
 		t.Fail()
@@ -317,7 +317,7 @@ func TestHighRegisterOperationEmulation(t *testing.T) {
 		t.Logf("Failed running mov (high register): %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(9)
+	value, _ = p.GetRegister(9)
 	if value != 1 {
 		t.Logf("Expected 1 in r9, got %d\n", value)
 		t.Fail()
@@ -336,10 +336,10 @@ func TestHighRegisterOperationEmulation(t *testing.T) {
 		t.Logf("High-register cmp failed setting flags.\n")
 		t.Fail()
 	}
-	p.SetRegisterNumber(14, 4090)
+	p.SetRegister(14, 4090)
 	// bx r14 (lr)
 	e = testSingleTHUMBInstruction(0x4770, p)
-	value, _ = p.GetRegisterNumber(15)
+	value, _ = p.GetRegister(15)
 	if value != 4090 {
 		t.Logf("Bx set r15 to %d instead of 4770.\n", value)
 		t.Fail()
@@ -364,15 +364,15 @@ func TestPCRelativeLoadEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 0)
-	p.SetRegisterNumber(0, 0)
+	p.SetRegister(0, 0)
+	p.SetRegister(0, 0)
 	// ldr r0, [pc, 0]
 	e = testSingleTHUMBInstruction(0x4800, p)
 	if e != nil {
 		t.Logf("Failed running pc-relative load 1: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 1337 {
 		t.Logf("Read %d, not 1337, relative to PC.\n", value)
 		t.Fail()
@@ -383,7 +383,7 @@ func TestPCRelativeLoadEmulation(t *testing.T) {
 		t.Logf("Failed running pc-relative load 2: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(1)
+	value, _ = p.GetRegister(1)
 	if value != 100 {
 		t.Logf("Read %d, not 100, relative to PC.\n", value)
 		t.Fail()
@@ -396,9 +396,9 @@ func TestLoadStoreRegisterOffsetEmulation(t *testing.T) {
 		t.FailNow()
 	}
 	m := p.GetMemoryInterface()
-	p.SetRegisterNumber(0, 1337)
-	p.SetRegisterNumber(1, 0)
-	p.SetRegisterNumber(2, 4100)
+	p.SetRegister(0, 1337)
+	p.SetRegister(1, 0)
+	p.SetRegister(2, 4100)
 	// str r0, [r1, r2]
 	e = testSingleTHUMBInstruction(0x5088, p)
 	if e != nil {
@@ -410,23 +410,23 @@ func TestLoadStoreRegisterOffsetEmulation(t *testing.T) {
 		t.Logf("Wrote %d instead of 1337?\n", value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 0)
-	p.SetRegisterNumber(1, 4000)
-	p.SetRegisterNumber(2, 100)
+	p.SetRegister(0, 0)
+	p.SetRegister(1, 4000)
+	p.SetRegister(2, 100)
 	// ldr r0, [r1, r2]
 	e = testSingleTHUMBInstruction(0x5888, p)
 	if e != nil {
 		t.Logf("Failed running ldr: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 1337 {
 		t.Logf("Expected to read 1337, got %d instead.\n", value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 0x24)
-	p.SetRegisterNumber(1, 4200)
-	p.SetRegisterNumber(2, 13)
+	p.SetRegister(0, 0x24)
+	p.SetRegister(1, 4200)
+	p.SetRegister(2, 13)
 	// strb r0, [r1, r2]
 	e = testSingleTHUMBInstruction(0x5450, p)
 	if e != nil {
@@ -441,14 +441,14 @@ func TestLoadStoreRegisterOffsetEmulation(t *testing.T) {
 		t.Logf("Expected to write 0x24, wrote 0x%02x instead.\n", byteValue)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 0)
+	p.SetRegister(0, 0)
 	// ldrb r0, [r1, r2]
 	e = testSingleTHUMBInstruction(0x5c50, p)
 	if e != nil {
 		t.Logf("Failed running ldrb: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0x24 {
 		t.Logf("Expected to read 0x24, read 0x%08x instead.\n", value)
 		t.Fail()
@@ -465,23 +465,23 @@ func TestLoadStoreSignExtendedHalfwordEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 0)
-	p.SetRegisterNumber(1, 4111)
+	p.SetRegister(0, 0)
+	p.SetRegister(1, 4111)
 	// ldsb r0, [r1, r0]
 	e = testSingleTHUMBInstruction(0x5608, p)
 	if e != nil {
 		t.Logf("Failed running ldsb instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 0xffffff80 {
 		t.Logf("Expected to sign-extend byte to 0xffffff80, not 0x%08x\n",
 			value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 0xfeedfeed)
-	p.SetRegisterNumber(1, 4100)
-	p.SetRegisterNumber(2, 20)
+	p.SetRegister(0, 0xfeedfeed)
+	p.SetRegister(1, 4100)
+	p.SetRegister(2, 20)
 	// strh r0, [r1, r2]
 	e = testSingleTHUMBInstruction(0x5288, p)
 	if e != nil {
@@ -502,7 +502,7 @@ func TestLoadStoreSignExtendedHalfwordEmulation(t *testing.T) {
 		t.Logf("Failed to run ldrh: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0xfeed {
 		t.Logf("Expected to load 0xfeed, got 0x%08x instead.\n", value)
 		t.Fail()
@@ -513,7 +513,7 @@ func TestLoadStoreSignExtendedHalfwordEmulation(t *testing.T) {
 		t.Logf("Failed to run ldrsh: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0xfffffeed {
 		t.Logf("Expected to load 0xfffffeed, got 0x%08x instead.\n", value)
 		t.Fail()
@@ -535,8 +535,8 @@ func TestLoadStoreImmediateOffsetEmulation(t *testing.T) {
 		0x6088,
 		// strb r2, [r1, 12]
 		0x730a}
-	p.SetRegisterNumber(1, 4200)
-	p.SetRegisterNumber(15, 4096)
+	p.SetRegister(1, 4200)
+	p.SetRegister(15, 4096)
 	e = m.WriteMemoryWord(4200, 0x1337)
 	if e != nil {
 		t.FailNow()
@@ -579,20 +579,20 @@ func TestLoadStoreHalfwordEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 0)
-	p.SetRegisterNumber(1, 4200)
+	p.SetRegister(0, 0)
+	p.SetRegister(1, 4200)
 	// ldrh r0, [r1, 4]
 	e = testSingleTHUMBInstruction(0x8888, p)
 	if e != nil {
 		t.Logf("Failed running ldrh instruction: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 0xbeef {
 		t.Logf("Expected to read 0xbeef, got 0x%08x instead.\n", value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 0xdecafbad)
+	p.SetRegister(0, 0xdecafbad)
 	// strh r0, [r1, 8]
 	e = testSingleTHUMBInstruction(0x8108, p)
 	if e != nil {
@@ -619,19 +619,19 @@ func TestSPRelativeLoadStoreEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(13, 4200)
+	p.SetRegister(13, 4200)
 	// ldr r0, [sp, 4]
 	e = testSingleTHUMBInstruction(0x9801, p)
 	if e != nil {
 		t.Logf("Failed running sp-relative ldr: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 1337 {
 		t.Logf("Expected to read 1337, got %d.\n", value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(0, 100)
+	p.SetRegister(0, 100)
 	// str r0, [sp]
 	e = testSingleTHUMBInstruction(0x9000, p)
 	if e != nil {
@@ -659,19 +659,19 @@ func TestLoadAddressEmulation(t *testing.T) {
 		t.Logf("Failed getting pc address: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 4136 {
 		t.Logf("Expected to get address 4136 from PC, got %d.\n", value)
 		t.Fail()
 	}
-	p.SetRegisterNumber(13, 0xf0000)
+	p.SetRegister(13, 0xf0000)
 	// add r0, sp, 16
 	e = testSingleTHUMBInstruction(0xa804, p)
 	if e != nil {
 		t.Logf("Failed getting sp address: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(0)
+	value, _ = p.GetRegister(0)
 	if value != 0xf0010 {
 		t.Logf("Expected 0xf0010 from sp. Got 0x%08x.\n", value)
 		t.Fail()
@@ -683,14 +683,14 @@ func TestAddToStackPointerEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(13, 128)
+	p.SetRegister(13, 128)
 	// add sp, 100
 	e = testSingleTHUMBInstruction(0xb019, p)
 	if e != nil {
 		t.Logf("Failed adding to sp: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(13)
+	value, _ := p.GetRegister(13)
 	if value != 228 {
 		t.Logf("Expected sp to be 228, was %d.\n", value)
 		t.Fail()
@@ -701,7 +701,7 @@ func TestAddToStackPointerEmulation(t *testing.T) {
 		t.Logf("Failed subtracting from sp: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(13)
+	value, _ = p.GetRegister(13)
 	if value != 100 {
 		t.Logf("Expected sp to be 100, was %d.\n", value)
 		t.Fail()
@@ -713,13 +713,13 @@ func TestPushPopRegistersEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 1337)
-	p.SetRegisterNumber(1, 2336)
-	p.SetRegisterNumber(2, 0)
-	p.SetRegisterNumber(3, 0)
-	p.SetRegisterNumber(13, 4200)
-	p.SetRegisterNumber(14, 0xf000)
-	p.SetRegisterNumber(15, 4096)
+	p.SetRegister(0, 1337)
+	p.SetRegister(1, 2336)
+	p.SetRegister(2, 0)
+	p.SetRegister(3, 0)
+	p.SetRegister(13, 4200)
+	p.SetRegister(14, 0xf000)
+	p.SetRegister(15, 4096)
 	instructions := []uint16{
 		// push {r0, r1, lr}
 		0xb503,
@@ -734,12 +734,12 @@ func TestPushPopRegistersEmulation(t *testing.T) {
 		t.Logf("Failed running push/pop instructions.\n")
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(2)
+	value, _ := p.GetRegister(2)
 	if value != 1337 {
 		t.Logf("Expected 1337 in r2, got %d.\n", value)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(3)
+	value, _ = p.GetRegister(3)
 	if value != 2336 {
 		t.Logf("Expected 2336 in r3, got %d.\n", value)
 		t.Fail()
@@ -751,7 +751,7 @@ func TestMultipleLoadStoreEmulation(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(0, 4200)
+	p.SetRegister(0, 4200)
 	m := p.GetMemoryInterface()
 	e = m.WriteMemoryWord(4200, 1337)
 	if e != nil {
@@ -767,16 +767,16 @@ func TestMultipleLoadStoreEmulation(t *testing.T) {
 		t.Logf("Failed running ldmia: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(1)
+	value, _ := p.GetRegister(1)
 	if value != 1337 {
 		t.Logf("ldmia loaded %d instead of 1337.\n", value)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(7)
+	value, _ = p.GetRegister(7)
 	if value != 2336 {
 		t.Logf("ldmia loaded %d instead of 2336.\n", value)
 	}
-	p.SetRegisterNumber(0, 4300)
+	p.SetRegister(0, 4300)
 	// stmia r0!, {r1, r7}
 	e = testSingleTHUMBInstruction(0xc082, p)
 	value, e = m.ReadMemoryWord(4300)
@@ -814,13 +814,13 @@ func TestConditionalBranchEmulation(t *testing.T) {
 		t.Logf("Failed to write instructions to memory.\n")
 		t.Fail()
 	}
-	p.SetRegisterNumber(15, 4096)
+	p.SetRegister(15, 4096)
 	e = runMultipleInstructions(4, p, t)
 	if e != nil {
 		t.Logf("Failed running conditional branch program.\n")
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(0)
+	value, _ := p.GetRegister(0)
 	if value != 97 {
 		t.Logf("Expected to get 97 in r0, got %d.\n", value)
 		t.Fail()
@@ -839,7 +839,7 @@ func TestSoftwareInterruptTHUMBEmulation(t *testing.T) {
 		t.Logf("Failed running software interrupt: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(15)
+	value, _ := p.GetRegister(15)
 	if value != 0x8 {
 		t.Logf("SWI set pc to 0x%08x, not 0x8.\n", value)
 		t.Fail()
@@ -853,7 +853,7 @@ func TestSoftwareInterruptTHUMBEmulation(t *testing.T) {
 		t.Logf("Processor in mode 0x%02x after swi, not 0x13.\n", newMode)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(14)
+	value, _ = p.GetRegister(14)
 	if value != 4098 {
 		t.Logf("Swi incorrectly set lr to %d, not 4098.\n", value)
 		t.Fail()
@@ -871,7 +871,7 @@ func TestUnconditionalBranchEmulation(t *testing.T) {
 		t.Logf("Unconditional branch (backward) failed: %s\n", e)
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(15)
+	value, _ := p.GetRegister(15)
 	if value != 4090 {
 		t.Logf("Expected pc to be %d, was %d.\n", 4100-28, value)
 		t.Fail()
@@ -882,7 +882,7 @@ func TestUnconditionalBranchEmulation(t *testing.T) {
 		t.Logf("Unconditional branch (forward) failed: %s\n", e)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(15)
+	value, _ = p.GetRegister(15)
 	if value != 4104 {
 		t.Logf("Expected pc to be %d, was %d.\n", 4100+1338, value)
 		t.Fail()
@@ -902,17 +902,17 @@ func TestLongBranchAndLinkInstruction(t *testing.T) {
 	if e != nil {
 		t.FailNow()
 	}
-	p.SetRegisterNumber(15, 4096)
+	p.SetRegister(15, 4096)
 	e = runMultipleInstructions(2, p, t)
 	if e != nil {
 		t.Fail()
 	}
-	value, _ := p.GetRegisterNumber(15)
+	value, _ := p.GetRegister(15)
 	if value != 4092 {
 		t.Logf("Expected to jump to 4092, got %d.\n", value)
 		t.Fail()
 	}
-	value, _ = p.GetRegisterNumber(14)
+	value, _ = p.GetRegister(14)
 	if value != 4101 {
 		t.Logf("Expected 4101 in LR, got %d.\n", value)
 		t.Fail()

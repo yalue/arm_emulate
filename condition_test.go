@@ -5,18 +5,12 @@ import (
 )
 
 func TestNewARMCondition(t *testing.T) {
-	c := NewARMCondition(0)
+	c := ARMCondition(0)
 	if c.String() != "eq" {
 		t.Fail()
 	}
-	if c.Condition() != 0 {
-		t.Fail()
-	}
-	c = NewARMCondition(10)
+	c = ARMCondition(10)
 	if c.String() != "ge" {
-		t.Fail()
-	}
-	if c.Condition() != 10 {
 		t.Fail()
 	}
 }

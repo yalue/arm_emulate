@@ -12,7 +12,7 @@ func (n *DataProcessingInstruction) evaluateSecondOperand(
 		return (value >> r) | (value << (32 - r)), nil
 	}
 	value, _ := p.GetRegister(n.Rm)
-	if n.Rm.Register() == 15 {
+	if n.Rm == 15 {
 		value += 4
 		if n.Shift.UseRegister() {
 			value += 4
@@ -36,7 +36,7 @@ func (n *DataProcessingInstruction) Emulate(p ARMProcessor) error {
 		return fmt.Errorf("Invalid second operand: %s", e)
 	}
 	operand1, _ := p.GetRegister(n.Rn)
-	if n.Rn.Register() == 15 {
+	if n.Rn == 15 {
 		operand1 += 4
 		if !n.IsImmediate && n.Shift.UseRegister() {
 			operand1 += 4
@@ -50,7 +50,7 @@ func (n *DataProcessingInstruction) Emulate(p ARMProcessor) error {
 		p.SetRegister(n.Rd, result)
 		// Writes to r15 with the S bit set is an atomic operation to switch
 		// modes (not valid in user mode)
-		if (n.Rd.Register() == 15) && n.SetConditions {
+		if (n.Rd == 15) && n.SetConditions {
 			savedStatus, e := p.GetSPSR()
 			if e != nil {
 				return fmt.Errorf("Invalid write to r15 in user mode: %s", e)
@@ -78,7 +78,7 @@ func (n *PSRTransferInstruction) Emulate(p ARMProcessor) error {
 		return nil
 	}
 	if !n.WritePSR {
-		if n.Rd.Register() == 15 {
+		if n.Rd == 15 {
 			return fmt.Errorf("Invalid mrs destination register")
 		}
 		if n.UseCPSR {
@@ -97,7 +97,7 @@ func (n *PSRTransferInstruction) Emulate(p ARMProcessor) error {
 		value = uint32(n.Immediate)
 		value = (value >> r) | (value << (32 - r))
 	} else {
-		if n.Rm.Register() == 15 {
+		if n.Rm == 15 {
 			return fmt.Errorf("Invalid msr source register")
 		}
 		value, _ = p.GetRegister(n.Rm)
@@ -205,7 +205,7 @@ func (n *BranchExchangeInstruction) Emulate(p ARMProcessor) error {
 			return e
 		}
 	}
-	p.SetRegisterNumber(15, destination)
+	p.SetRegister(15, destination)
 	return nil
 }
 
@@ -222,7 +222,7 @@ func (n *HalfwordDataTransferInstruction) Emulate(p ARMProcessor) error {
 		offset, _ = p.GetRegister(n.Rm)
 	}
 	base, _ := p.GetRegister(n.Rn)
-	if n.Rn.Register() == 15 {
+	if n.Rn == 15 {
 		base += 4
 	}
 	if n.Preindex {
@@ -258,7 +258,7 @@ func (n *HalfwordDataTransferInstruction) Emulate(p ARMProcessor) error {
 		p.SetRegister(n.Rd, data)
 	} else {
 		data, _ = p.GetRegister(n.Rd)
-		if n.Rd.Register() == 15 {
+		if n.Rd == 15 {
 			data += 8
 		}
 		e = memory.WriteMemoryHalfword(base, uint16(data&0xffff))
@@ -291,7 +291,7 @@ func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 		if n.Shift.UseRegister() {
 			return fmt.Errorf("Register-specified shift not allowed.")
 		}
-		if n.Rm.Register() == 15 {
+		if n.Rm == 15 {
 			return fmt.Errorf("Can't use r15 as offset in data transfer.")
 		}
 		offsetRegister, _ := p.GetRegister(n.Rm)
@@ -301,7 +301,7 @@ func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 		}
 	}
 	base, _ := p.GetRegister(n.Rn)
-	if n.Rn.Register() == 15 {
+	if n.Rn == 15 {
 		base += 4
 	}
 	if n.Preindex {
@@ -326,7 +326,7 @@ func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 		p.SetRegister(n.Rd, loadedValue)
 	} else {
 		toStore, e := p.GetRegister(n.Rd)
-		if n.Rd.Register() == 15 {
+		if n.Rd == 15 {
 			toStore += 8
 		}
 		if n.ByteQuantity {
@@ -339,7 +339,7 @@ func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 		}
 	}
 	if !n.Preindex {
-		if n.Rn.Register() == 15 {
+		if n.Rn == 15 {
 			return fmt.Errorf("r15 is incompatible with postindexing")
 		}
 		if n.Up {
@@ -350,7 +350,7 @@ func (n *SingleDataTransferInstruction) Emulate(p ARMProcessor) error {
 		// We probably don't need to do anything with the 'W' bit here, for
 		// now (ldrt instruction, etc.)
 	} else if n.WriteBack {
-		if n.Rn.Register() == 15 {
+		if n.Rn == 15 {
 			return fmt.Errorf("r15 is incompatible with writeback")
 		}
 		p.SetRegister(n.Rn, base)
@@ -366,9 +366,9 @@ func (n *BlockDataTransferInstruction) blockDataStore(p ARMProcessor) error {
 		if (bits & 1) == 1 {
 			var registerContents uint32
 			if n.ForceUser {
-				registerContents, e = p.GetUserRegisterNumber(uint8(i))
+				registerContents, e = p.GetUserRegister(ARMRegister(i))
 			} else {
-				registerContents, e = p.GetRegisterNumber(uint8(i))
+				registerContents, e = p.GetRegister(ARMRegister(i))
 			}
 			if e != nil {
 				return e
@@ -418,7 +418,7 @@ func (n *BlockDataTransferInstruction) blockDataLoad(p ARMProcessor) error {
 	toRead := make([]uint8, 0, 16)
 	for i := 0; (i < 16) && (bits != 0); i++ {
 		if (bits & 1) == 1 {
-			if n.Rn.Register() == uint8(i) {
+			if n.Rn == ARMRegister(i) {
 				loadedBase = true
 			}
 			toRead = append(toRead, uint8(i))
@@ -445,9 +445,9 @@ func (n *BlockDataTransferInstruction) blockDataLoad(p ARMProcessor) error {
 			return e
 		}
 		if useUserBank {
-			e = p.SetUserRegisterNumber(registerNumber, value)
+			e = p.SetUserRegister(ARMRegister(registerNumber), value)
 		} else {
-			e = p.SetRegisterNumber(registerNumber, value)
+			e = p.SetRegister(ARMRegister(registerNumber), value)
 		}
 		if e != nil {
 			return e
@@ -496,16 +496,16 @@ func (n *BranchInstruction) Emulate(p ARMProcessor) error {
 	if !n.Condition().IsMet(p) {
 		return nil
 	}
-	value, _ := p.GetRegisterNumber(15)
+	value, _ := p.GetRegister(15)
 	pc := int32(value)
 	if n.Link {
-		p.SetRegisterNumber(14, uint32(pc))
+		p.SetRegister(14, uint32(pc))
 	}
 	// Sign-extend the offset and shift it left 2 bits.
 	offset := n.Offset << 8
 	offset = offset >> 6
 	pc += 4 + offset
-	p.SetRegisterNumber(15, uint32(pc))
+	p.SetRegister(15, uint32(pc))
 	return nil
 }
 
@@ -587,12 +587,12 @@ func (n *SoftwareInterruptInstruction) Emulate(p ARMProcessor) error {
 	if !n.Condition().IsMet(p) {
 		return nil
 	}
-	currentPC, _ := p.GetRegisterNumber(15)
+	currentPC, _ := p.GetRegister(15)
 	e = p.SetMode(0x13)
 	if e != nil {
 		return e
 	}
-	p.SetRegisterNumber(14, currentPC)
-	p.SetRegisterNumber(15, 0x8)
+	p.SetRegister(14, currentPC)
+	p.SetRegister(15, 0x8)
 	return nil
 }

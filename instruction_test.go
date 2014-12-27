@@ -27,7 +27,7 @@ func TestSoftwareInterruptParse(t *testing.T) {
 	if n.Raw() != raw {
 		t.Fail()
 	}
-	if n.Condition().Condition() != 1 {
+	if n.Condition() != 1 {
 		t.Fail()
 	}
 	if !strings.Contains(n.String(), "swine") {
@@ -58,7 +58,7 @@ func TestDPRInstruction(t *testing.T) {
 	if e != nil {
 		t.Fail()
 	}
-	if n.Condition().Condition() != 14 {
+	if n.Condition() != 14 {
 		t.Fail()
 	}
 	if !strings.HasPrefix(n.String(), "cmp") {

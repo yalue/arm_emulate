@@ -1,35 +1,19 @@
 package arm_emulate
 
-import (
-	"fmt"
-)
-
 var conditionStrings = [...]string{"eq", "ne", "cs", "cc", "mi", "pl", "vs",
 	"vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "nv"}
 
-type ARMCondition interface {
-	fmt.Stringer
-	Condition() uint8
-	IsMet(p ARMProcessor) bool
-}
+type ARMCondition uint8
 
-type basicARMCondition struct {
-	condition uint8
-}
-
-func (c *basicARMCondition) String() string {
-	if c.condition == 14 {
+func (c ARMCondition) String() string {
+	if c == 14 {
 		return ""
 	}
-	return conditionStrings[c.condition&0xf]
+	return conditionStrings[c&0xf]
 }
 
-func (c *basicARMCondition) Condition() uint8 {
-	return c.condition
-}
-
-func (c *basicARMCondition) IsMet(p ARMProcessor) bool {
-	switch c.condition {
+func (c ARMCondition) IsMet(p ARMProcessor) bool {
+	switch c {
 	case 14:
 		return true
 	case 0:
@@ -63,8 +47,4 @@ func (c *basicARMCondition) IsMet(p ARMProcessor) bool {
 	}
 	// Case 15-- error?
 	return false
-}
-
-func NewARMCondition(condition uint8) ARMCondition {
-	return &basicARMCondition{condition & 0xf}
 }

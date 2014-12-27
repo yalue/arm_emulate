@@ -28,7 +28,7 @@ func TestNewARMShift(t *testing.T) {
 	if s.ShiftString() != "ror" {
 		t.Fail()
 	}
-	if s.Register().Register() != 4 {
+	if s.Register() != 4 {
 		t.Fail()
 	}
 }

@@ -398,8 +398,8 @@ func (n *LongBranchAndLinkInstruction) String() string {
 func parseMoveShiftedRegisterInstruction(r uint16) (THUMBInstruction, error) {
 	var toReturn MoveShiftedRegisterInstruction
 	toReturn.raw = r
-	toReturn.Rd = NewARMRegister(uint8(r & 7))
-	toReturn.Rs = NewARMRegister(uint8((r >> 3) & 7))
+	toReturn.Rd = ARMRegister(uint8(r & 7))
+	toReturn.Rs = ARMRegister(uint8((r >> 3) & 7))
 	toReturn.Offset = uint8((r >> 6) & 0x1f)
 	toReturn.Operation = uint8((r >> 11) & 3)
 	return &toReturn, nil
@@ -408,13 +408,13 @@ func parseMoveShiftedRegisterInstruction(r uint16) (THUMBInstruction, error) {
 func parseAddSubtractInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn AddSubtractInstruction
 	toReturn.raw = raw
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rs = NewARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rs = ARMRegister(uint8((raw >> 3) & 7))
 	toReturn.Subtract = (raw & 0x200) != 0
 	toReturn.Immediate = uint8((raw >> 6) & 7)
 	toReturn.IsImmediate = (raw & 0x400) != 0
 	if !toReturn.IsImmediate {
-		toReturn.Rn = NewARMRegister(toReturn.Immediate)
+		toReturn.Rn = ARMRegister(toReturn.Immediate)
 	}
 	return &toReturn, nil
 }
@@ -425,7 +425,7 @@ func parseMoveCompareAddSubtractImmediateInstruction(raw uint16) (
 	toReturn.raw = raw
 	toReturn.Immediate = uint8(raw & 0xff)
 	toReturn.Operation = uint8((raw >> 11) & 3)
-	toReturn.Rd = NewARMRegister(uint8((raw >> 8) & 7))
+	toReturn.Rd = ARMRegister(uint8((raw >> 8) & 7))
 	return &toReturn, nil
 }
 
@@ -433,8 +433,8 @@ func parseALUOperationInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn ALUOperationInstruction
 	toReturn.raw = raw
 	toReturn.Opcode = NewALUOpcodeTHUMB(uint8((raw >> 6) & 0xf))
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rs = NewARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rs = ARMRegister(uint8((raw >> 3) & 7))
 	return &toReturn, nil
 }
 
@@ -451,14 +451,14 @@ func parseHighRegisterOperationInstruction(raw uint16) (THUMBInstruction,
 	if h {
 		register += 8
 	}
-	toReturn.Rd = NewARMRegister(register)
+	toReturn.Rd = ARMRegister(register)
 	h = (raw & 0x40) != 0
 	toReturn.HighFlag2 = h
 	register = uint8((raw >> 3) & 7)
 	if h {
 		register += 8
 	}
-	toReturn.Rs = NewARMRegister(register)
+	toReturn.Rs = ARMRegister(register)
 	return &toReturn, nil
 }
 
@@ -466,7 +466,7 @@ func parsePCRelativeLoadInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn PcRelativeLoadInstruction
 	toReturn.raw = raw
 	toReturn.Offset = uint8(raw & 0xff)
-	toReturn.Rd = NewARMRegister(uint8((raw >> 8) & 7))
+	toReturn.Rd = ARMRegister(uint8((raw >> 8) & 7))
 	return &toReturn, nil
 }
 
@@ -476,9 +476,9 @@ func parseLoadStoreRegisterOffsetInstruction(raw uint16) (THUMBInstruction,
 	toReturn.raw = raw
 	toReturn.ByteQuantity = (raw & 0x400) != 0
 	toReturn.Load = (raw & 0x800) != 0
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rb = NewARMRegister(uint8((raw >> 3) & 7))
-	toReturn.Ro = NewARMRegister(uint8((raw >> 6) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rb = ARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Ro = ARMRegister(uint8((raw >> 6) & 7))
 	return &toReturn, nil
 }
 
@@ -486,9 +486,9 @@ func parseLoadStoreSignExtendedHalfwordInstruction(raw uint16) (
 	THUMBInstruction, error) {
 	var toReturn LoadStoreSignExtendedHalfwordInstruction
 	toReturn.raw = raw
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rb = NewARMRegister(uint8((raw >> 3) & 7))
-	toReturn.Ro = NewARMRegister(uint8((raw >> 6) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rb = ARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Ro = ARMRegister(uint8((raw >> 6) & 7))
 	toReturn.SignExtend = (raw & 0x400) != 0
 	toReturn.HBit = (raw & 0x800) != 0
 	return &toReturn, nil
@@ -498,8 +498,8 @@ func parseLoadStoreImmediateOffsetInstruction(raw uint16) (THUMBInstruction,
 	error) {
 	var toReturn LoadStoreImmediateOffsetInstruction
 	toReturn.raw = raw
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rb = NewARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rb = ARMRegister(uint8((raw >> 3) & 7))
 	toReturn.Offset = uint8((raw >> 6) & 0x1f)
 	toReturn.Load = (raw & 0x800) != 0
 	toReturn.ByteQuantity = (raw & 0x1000) != 0
@@ -509,8 +509,8 @@ func parseLoadStoreImmediateOffsetInstruction(raw uint16) (THUMBInstruction,
 func parseLoadStoreHalfwordInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn LoadStoreHalfwordInstruction
 	toReturn.raw = raw
-	toReturn.Rd = NewARMRegister(uint8(raw & 7))
-	toReturn.Rb = NewARMRegister(uint8((raw >> 3) & 7))
+	toReturn.Rd = ARMRegister(uint8(raw & 7))
+	toReturn.Rb = ARMRegister(uint8((raw >> 3) & 7))
 	toReturn.Offset = uint8((raw >> 6) & 0x1f)
 	toReturn.Load = (raw & 0x800) != 0
 	return &toReturn, nil
@@ -521,7 +521,7 @@ func parseSPRelativeLoadStoreInstruction(raw uint16) (THUMBInstruction,
 	var toReturn SPRelativeLoadStoreInstruction
 	toReturn.raw = raw
 	toReturn.Offset = uint8(raw & 0xff)
-	toReturn.Rd = NewARMRegister(uint8((raw >> 8) & 0x7))
+	toReturn.Rd = ARMRegister(uint8((raw >> 8) & 0x7))
 	toReturn.Load = (raw & 0x800) != 0
 	return &toReturn, nil
 }
@@ -530,7 +530,7 @@ func parseLoadAddressInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn LoadAddressInstruction
 	toReturn.raw = raw
 	toReturn.Offset = uint8(raw & 0xff)
-	toReturn.Rd = NewARMRegister(uint8((raw >> 8) & 0x7))
+	toReturn.Rd = ARMRegister(uint8((raw >> 8) & 0x7))
 	toReturn.LoadSP = (raw & 0x800) != 0
 	return &toReturn, nil
 }
@@ -556,7 +556,7 @@ func parseMultipleLoadStoreInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn MultipleLoadStoreInstruction
 	toReturn.raw = raw
 	toReturn.RegisterList = uint8(raw & 0xff)
-	toReturn.Rb = NewARMRegister(uint8((raw >> 8) & 0x7))
+	toReturn.Rb = ARMRegister(uint8((raw >> 8) & 0x7))
 	toReturn.Load = (raw & 0x800) != 0
 	return &toReturn, nil
 }
@@ -565,8 +565,8 @@ func parseConditionalBranchInstruction(raw uint16) (THUMBInstruction, error) {
 	var toReturn ConditionalBranchInstruction
 	toReturn.raw = raw
 	toReturn.Offset = uint8(raw & 0xff)
-	toReturn.Condition = NewARMCondition(uint8((raw >> 8) & 0xf))
-	if toReturn.Condition.Condition() == 14 {
+	toReturn.Condition = ARMCondition((raw >> 8) & 0xf)
+	if toReturn.Condition == 14 {
 		return &toReturn, fmt.Errorf("Illegal condition in conditional branch")
 	}
 	return &toReturn, nil
