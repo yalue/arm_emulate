@@ -102,7 +102,8 @@ func (n *PSRTransferInstruction) Emulate(p ARMProcessor) error {
 		}
 		value, _ = p.GetRegister(n.Rm)
 	}
-	if n.FlagsOnly {
+	// Prevent user-mode from changing anything except flags.
+	if n.FlagsOnly || (p.GetMode() == userMode) {
 		var currentPSR uint32
 		if n.UseCPSR {
 			currentPSR, e = p.GetCPSR()

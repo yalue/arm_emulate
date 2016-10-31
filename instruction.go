@@ -10,9 +10,6 @@ type ARMInstruction interface {
 	Raw() uint32
 	Condition() ARMCondition
 	Emulate(p ARMProcessor) error
-	// If the instruction was allocated from a cache, then this returns it to
-	// the cache for reuse later.
-	ReCache()
 }
 
 type basicARMInstruction struct {
@@ -588,12 +585,12 @@ func parseCoprocDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseBranchInstruction(raw uint32) (ARMInstruction, error) {
-	toReturn := newBranchInstruction()
+	var toReturn BranchInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.Offset = int32(raw) & int32(0x00ffffff)
 	toReturn.Link = (raw & 0x1000000) != 0
-	return toReturn, nil
+	return &toReturn, nil
 }
 
 func parseBlockDataTransferInstruction(raw uint32) (ARMInstruction, error) {
@@ -618,7 +615,7 @@ func parseUndefinedInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
-	toReturn := newSingleDataTransferInstruction()
+	var toReturn SingleDataTransferInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.ImmediateOffset = (raw & 0x2000000) == 0
@@ -643,7 +640,7 @@ func parseSingleDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 	toReturn.ByteQuantity = (raw & 0x400000) != 0
 	toReturn.Up = (raw & 0x800000) != 0
 	toReturn.Preindex = (raw & 0x1000000) != 0
-	return toReturn, nil
+	return &toReturn, nil
 }
 
 func parseHalfwordDataTransferInstruction(raw uint32) (ARMInstruction, error) {
@@ -668,11 +665,11 @@ func parseHalfwordDataTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseBranchExchangeInstruction(raw uint32) (ARMInstruction, error) {
-	toReturn := newBranchExchangeInstruction()
+	var toReturn BranchExchangeInstruction
 	toReturn.raw = raw
 	toReturn.condition = getCondition(raw)
 	toReturn.Rn = ARMRegister(uint8(raw & 0xf))
-	return toReturn, nil
+	return &toReturn, nil
 }
 
 func parseSingleDataSwapInstruction(raw uint32) (ARMInstruction, error) {
@@ -749,7 +746,7 @@ func parsePSRTransferInstruction(raw uint32) (ARMInstruction, error) {
 }
 
 func parseDataProcessingInstruction(raw uint32) (ARMInstruction, error) {
-	toReturn := newDataProcessingInstruction()
+	var toReturn DataProcessingInstruction
 	toReturn.raw = raw
 	toReturn.SetConditions = (raw & 0x100000) != 0
 	if !toReturn.SetConditions {
@@ -769,7 +766,7 @@ func parseDataProcessingInstruction(raw uint32) (ARMInstruction, error) {
 	toReturn.Rd = ARMRegister(uint8((raw >> 12) & 0xf))
 	toReturn.Rn = ARMRegister(uint8((raw >> 16) & 0xf))
 	toReturn.Opcode = ARMDataProcessingOpcode(uint8((raw >> 21) & 0xf))
-	return toReturn, nil
+	return &toReturn, nil
 }
 
 func ParseInstruction(raw uint32) (ARMInstruction, error) {

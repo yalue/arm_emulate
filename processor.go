@@ -5,13 +5,14 @@ import (
 )
 
 const (
-	userMode       uint8 = 0x10
-	fiqMode        uint8 = 0x11
-	irqMode        uint8 = 0x12
-	supervisorMode uint8 = 0x13
-	abortMode      uint8 = 0x17
-	undefinedMode  uint8 = 0x1b
-	systemMode     uint8 = 0x1f
+	userMode              uint8 = 0x10
+	fiqMode               uint8 = 0x11
+	irqMode               uint8 = 0x12
+	supervisorMode        uint8 = 0x13
+	abortMode             uint8 = 0x17
+	undefinedMode         uint8 = 0x1b
+	systemMode            uint8 = 0x1f
+	maxCachedInstructions       = 10000
 )
 
 func isValidMode(mode uint8) bool {
@@ -73,6 +74,8 @@ type ARMProcessor interface {
 type basicARMProcessor struct {
 	memory                        ARMMemory
 	coprocessors                  []ARMCoprocessor
+	armInstructionCache           map[uint32]ARMInstruction
+	thumbInstructionCache         map[uint16]THUMBInstruction
 	currentRegisters              [16]uint32
 	currentStatusRegister         uint32
 	fiqRegisters                  [7]uint32
@@ -303,7 +306,6 @@ func (p *basicARMProcessor) GetSPSR() (uint32, error) {
 	return 0, fmt.Errorf("Mode 0x%02x doesn't have a SPSR", mode)
 }
 
-// TODO: Protection on mode changes! Don't allow switching modes from user mode
 func (p *basicARMProcessor) SetCPSR(value uint32) error {
 	current, e := p.GetCPSR()
 	if e != nil {
@@ -410,6 +412,48 @@ func (p *basicARMProcessor) SendFIQ() error {
 	return e
 }
 
+// Parses an ARM instruction, checking the cache first.
+func (p *basicARMProcessor) getARMInstruction(raw uint32) (ARMInstruction,
+	error) {
+	// TODO: (Also for getTHUMBInstruction). Replace this really stupid cache
+	// with a better, smaller LRU cache.
+	var e error
+	instruction := p.armInstructionCache[raw]
+	if instruction != nil {
+		return instruction, nil
+	}
+	instruction, e = ParseInstruction(raw)
+	if e != nil {
+		return nil, e
+	}
+	if len(p.armInstructionCache) >= maxCachedInstructions {
+		p.armInstructionCache = make(map[uint32]ARMInstruction,
+			maxCachedInstructions)
+	}
+	p.armInstructionCache[raw] = instruction
+	return instruction, nil
+}
+
+// Parses a THUMB instruction, checking the cache first.
+func (p *basicARMProcessor) getTHUMBInstruction(raw uint16) (THUMBInstruction,
+	error) {
+	var e error
+	instruction := p.thumbInstructionCache[raw]
+	if instruction != nil {
+		return instruction, nil
+	}
+	instruction, e = ParseTHUMBInstruction(raw)
+	if e != nil {
+		return nil, e
+	}
+	if len(p.thumbInstructionCache) >= maxCachedInstructions {
+		p.thumbInstructionCache = make(map[uint16]THUMBInstruction,
+			maxCachedInstructions)
+	}
+	p.thumbInstructionCache[raw] = instruction
+	return instruction, nil
+}
+
 func (p *basicARMProcessor) PendingInstructionString() string {
 	pc, e := p.GetRegister(15)
 	if e != nil {
@@ -420,7 +464,7 @@ func (p *basicARMProcessor) PendingInstructionString() string {
 		if e != nil {
 			return fmt.Sprintf("%08x: Error: %s", pc, e)
 		}
-		instruction, e := ParseTHUMBInstruction(raw)
+		instruction, e := p.getTHUMBInstruction(raw)
 		if e != nil {
 			return fmt.Sprintf("%08x: %04x Error: %s", pc, raw, e)
 		}
@@ -430,8 +474,7 @@ func (p *basicARMProcessor) PendingInstructionString() string {
 	if e != nil {
 		return fmt.Sprintf("%08x: Error: %s", pc, e)
 	}
-	instruction, e := ParseInstruction(raw)
-	instruction.ReCache()
+	instruction, e := p.getARMInstruction(raw)
 	if e != nil {
 		return fmt.Sprintf("%08x: %08x Error: %s", pc, raw, e)
 	}
@@ -455,7 +498,7 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 		if e != nil {
 			return fmt.Errorf("Failed incrementing PC: %s", e)
 		}
-		instruction, e := ParseTHUMBInstruction(raw)
+		instruction, e := p.getTHUMBInstruction(raw)
 		if e != nil {
 			return fmt.Errorf("Failed decoding 0x%04x: %s", raw, e)
 		}
@@ -465,7 +508,7 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 	if e != nil {
 		return fmt.Errorf("Failed fetching instruction: %s", e)
 	}
-	instruction, e := ParseInstruction(raw)
+	instruction, e := p.getARMInstruction(raw)
 	if e != nil {
 		return fmt.Errorf("Failed decoding 0x%08x: %s", raw, e)
 	}
@@ -477,7 +520,6 @@ func (p *basicARMProcessor) RunNextInstruction() error {
 	if e != nil {
 		return fmt.Errorf("Failed emulating instruction: %s", e)
 	}
-	instruction.ReCache()
 	return nil
 }
 
@@ -486,5 +528,9 @@ func NewARMProcessor() ARMProcessor {
 	toReturn.memory = NewARMMemory()
 	toReturn.currentStatusRegister = uint32(userMode)
 	toReturn.coprocessors = make([]ARMCoprocessor, 0, 1)
+	toReturn.armInstructionCache = make(map[uint32]ARMInstruction,
+		maxCachedInstructions)
+	toReturn.thumbInstructionCache = make(map[uint16]THUMBInstruction,
+		maxCachedInstructions)
 	return &toReturn
 }
