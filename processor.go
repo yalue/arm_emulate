@@ -12,7 +12,6 @@ const (
 	abortMode             uint8 = 0x17
 	undefinedMode         uint8 = 0x1b
 	systemMode            uint8 = 0x1f
-	maxCachedInstructions       = 10000
 )
 
 func isValidMode(mode uint8) bool {
@@ -74,8 +73,7 @@ type ARMProcessor interface {
 type basicARMProcessor struct {
 	memory                        ARMMemory
 	coprocessors                  []ARMCoprocessor
-	armInstructionCache           map[uint32]ARMInstruction
-	thumbInstructionCache         map[uint16]THUMBInstruction
+	cache                         *instructionCache
 	currentRegisters              [16]uint32
 	currentStatusRegister         uint32
 	fiqRegisters                  [7]uint32
@@ -415,10 +413,8 @@ func (p *basicARMProcessor) SendFIQ() error {
 // Parses an ARM instruction, checking the cache first.
 func (p *basicARMProcessor) getARMInstruction(raw uint32) (ARMInstruction,
 	error) {
-	// TODO: (Also for getTHUMBInstruction). Replace this really stupid cache
-	// with a better, smaller LRU cache.
 	var e error
-	instruction := p.armInstructionCache[raw]
+	instruction := p.cache.getARMInstruction(raw)
 	if instruction != nil {
 		return instruction, nil
 	}
@@ -426,11 +422,7 @@ func (p *basicARMProcessor) getARMInstruction(raw uint32) (ARMInstruction,
 	if e != nil {
 		return nil, e
 	}
-	if len(p.armInstructionCache) >= maxCachedInstructions {
-		p.armInstructionCache = make(map[uint32]ARMInstruction,
-			maxCachedInstructions)
-	}
-	p.armInstructionCache[raw] = instruction
+	p.cache.storeARMInstruction(instruction)
 	return instruction, nil
 }
 
@@ -438,7 +430,7 @@ func (p *basicARMProcessor) getARMInstruction(raw uint32) (ARMInstruction,
 func (p *basicARMProcessor) getTHUMBInstruction(raw uint16) (THUMBInstruction,
 	error) {
 	var e error
-	instruction := p.thumbInstructionCache[raw]
+	instruction := p.cache.getTHUMBInstruction(raw)
 	if instruction != nil {
 		return instruction, nil
 	}
@@ -446,11 +438,7 @@ func (p *basicARMProcessor) getTHUMBInstruction(raw uint16) (THUMBInstruction,
 	if e != nil {
 		return nil, e
 	}
-	if len(p.thumbInstructionCache) >= maxCachedInstructions {
-		p.thumbInstructionCache = make(map[uint16]THUMBInstruction,
-			maxCachedInstructions)
-	}
-	p.thumbInstructionCache[raw] = instruction
+	p.cache.storeTHUMBInstruction(instruction)
 	return instruction, nil
 }
 
@@ -528,9 +516,6 @@ func NewARMProcessor() ARMProcessor {
 	toReturn.memory = NewARMMemory()
 	toReturn.currentStatusRegister = uint32(userMode)
 	toReturn.coprocessors = make([]ARMCoprocessor, 0, 1)
-	toReturn.armInstructionCache = make(map[uint32]ARMInstruction,
-		maxCachedInstructions)
-	toReturn.thumbInstructionCache = make(map[uint16]THUMBInstruction,
-		maxCachedInstructions)
+	toReturn.cache = newInstructionCache()
 	return &toReturn
 }
