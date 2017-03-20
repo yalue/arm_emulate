@@ -35,9 +35,9 @@ An example of emulating instructions:
   // it.
   memory.SetMemoryRegion(4096, codeBytes)
   // Set the PC to point to the start of the memory we just mapped
-  processor.SetRegisterNumber(15, 4096)
+  processor.SetRegister(15, 4096)
   // We can initialize any other register in a similar manner
-  processor.SetRegisterNumber(1, 1234)
+  processor.SetRegister(1, 1234)
   var e error
   // This will emulate instructions in a loop until an error occurs.
   for e == nil {
