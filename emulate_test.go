@@ -767,7 +767,7 @@ func TestCoprocessorEmulation(t *testing.T) {
 	// with the processor.
 	e = p.AddCoprocessor(NewTestStorageCoprocessor(8))
 	if e != nil {
-		t.Logf("Couldn't add coprocessor: %s\n")
+		t.Logf("Couldn't add coprocessor: %s\n", e)
 		t.FailNow()
 	}
 	instructions := []uint32{
